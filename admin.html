@@ -298,7 +298,9 @@ nav.tabs button{padding:10px 11px}
   /* ================= SETTINGS: edit the API_KEY line ================= */
   var CONFIG = {
     DB_URL: "https://kamikaze-fa-cup-default-rtdb.europe-west1.firebasedatabase.app",
-    API_KEY: "AIzaSyDwZ0V9GCG2i28qF0dmt9iMA0aPxpiZHr8"
+    API_KEY: "AIzaSyDwZ0V9GCG2i28qF0dmt9iMA0aPxpiZHr8",
+    // Address of your standings Worker (see standings-worker.js), no trailing slash. Leave empty until you've set it up.
+    STANDINGS_URL: "https://kamikaze-standings.roughtfish.workers.dev"
   };
   /* ==================================================================== */
 
@@ -708,7 +710,7 @@ nav.tabs button{padding:10px 11px}
     }
     if (!pass) { go.disabled = false; return authNote("Enter your password."); }
     return Authn.signIn(email, pass).then(function (j) { setAuth(j); return enterAdmin(); }).catch(function (e) {
-      var m = { INVALID_LOGIN_CREDENTIALS: "That email and password don't match.", INVALID_PASSWORD: "That email and password don't match.", EMAIL_NOT_FOUND: "That email and password don't match.", TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again." };
+      var m = { API: "The Firebase API key in this page isn't right. Check the API_KEY line at the top of the script.", INVALID_LOGIN_CREDENTIALS: "That email and password don't match.", INVALID_PASSWORD: "That email and password don't match.", EMAIL_NOT_FOUND: "That email and password don't match.", TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again." };
       authNote(m[e.code] || "Something went wrong. Check your connection and try again.");
     }).then(function () { if ($("authGo")) $("authGo").disabled = false; });
   }
@@ -853,8 +855,12 @@ nav.tabs button{padding:10px 11px}
     var counts = DIVISIONS.map(function (d) { return keys.filter(function (k) { return reg[k].rank >= d.base && reg[k].rank < d.base + d.size; }).length; });
     var list = keys.map(function (k) { return reg[k]; }).sort(function (a, b) { return a.rank - b.rank; });
     var divOpts = DIVISIONS.map(function (d, i) { return '<option value="' + i + '">' + esc(d.label) + "</option>"; }).join("");
+    var auto = DEMO || !!CONFIG.STANDINGS_URL;
     $("positionsView").innerHTML =
-      '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Update positions</h2><span class="hint">' + keys.length + " clubs known</span></div>" +
+      '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Premier League and Championship</h2><span class="hint">' + keys.length + " clubs known</span></div>" +
+      '<div class="adminbox"><p class="hint" style="margin:0">' + (auto ? "Loads both tables from football-data.org in one go: Premier League positions 1 to 20 and Championship 21 to 44. Do it before entering each round's draw." : "Not set up yet. Deploy the standings Worker and put its address in STANDINGS_URL at the top of admin.html. Until then, paste these two tables below like the others.") + "</p>" +
+      '<div class="btnrow"><button type="button" class="btn small" id="stLoad">Load Premier League and Championship</button></div><div id="stOut"></div></div></div>' +
+      '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Paste a table</h2></div>' +
       '<div class="adminbox"><label><span>Division</span><select id="tbDiv">' + divOpts + "</select></label>" +
       '<label><span>Paste the table, or type the clubs in order (one per line)</span><textarea id="tbText" spellcheck="false" placeholder="1 Barnet 6 3 3 0 14 9 5 12&#10;2 Bristol Rovers 6 4 0 2 12 8 4 12&#10;..."></textarea></label>' +
       '<div class="btnrow"><button type="button" class="btn small" id="tbRead">Read the table</button></div>' +
@@ -865,26 +871,86 @@ nav.tabs button{padding:10px 11px}
         list.map(function (c) { return "<tr><td>" + c.rank + "</td><td>" + esc(c.name) + "</td></tr>"; }).join("") + "</table></div></div>" : "");
   }
 
-  function readTable() {
-    var div = DIVISIONS[parseInt($("tbDiv").value, 10)], names = parseTable($("tbText").value), out = $("tbOut");
-    if (!names.length) { out.innerHTML = '<div class="strip">No clubs found. Paste the table, or type one club per line.</div>'; return; }
+  // Save a list of {name, short, rank} into the club list and show what changed.
+  function saveEntries(entries, warnings, outId) {
     var updates = {}, fresh = 0, moved = 0;
-    names.forEach(function (raw, i) {
-      var key = clubKey(raw), rank = div.base + i, old = registry()[key];
-      var display = SHORT[CANON[norm(raw)] || norm(raw)] || raw;
-      if (!old) fresh++; else if (old.rank !== rank) moved++;
-      updates["clubs/" + key] = { name: raw, short: display, rank: rank };
+    entries.forEach(function (en) {
+      var key = clubKey(en.name), old = registry()[key];
+      if (!old) fresh++; else if (old.rank !== en.rank) moved++;
+      updates["clubs/" + key] = { name: en.name, short: en.short, rank: en.rank };
     });
-    var warn = names.length !== div.size ? '<div class="strip">Expected ' + div.size + " clubs for this division but read " + names.length + ". Check nothing was missed or doubled. Saved anyway.</div>" : "";
     S.busy = true;
-    multi(seasonPath(), updates).then(function () { return loadSeason(); }).then(function () {
+    return multi(seasonPath(), updates).then(function () { return loadSeason(); }).then(function () {
       renderPositions();
-      var o = $("tbOut");
-      if (o) o.innerHTML = warn + '<div class="adminsum" style="padding:12px 0"><b>' + names.length + "</b> clubs read: <b>" + fresh + "</b> new, <b>" + moved + "</b> moved, " + (names.length - fresh - moved) + " unchanged. Positions are saved.</div>";
+      var o = $(outId);
+      if (o) o.innerHTML = (warnings || []).map(function (w) { return '<div class="strip">' + esc(w) + "</div>"; }).join("") +
+        '<div class="adminsum" style="padding:12px 0"><b>' + entries.length + "</b> clubs read: <b>" + fresh + "</b> new, <b>" + moved + "</b> moved, " + (entries.length - fresh - moved) + " unchanged. Positions are saved.</div>";
       note("Positions saved.", "ok");
     }).catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
   }
-  $("positionsView").addEventListener("click", function (e) { if (e.target.id === "tbRead") readTable(); });
+
+  function readTable() {
+    var div = DIVISIONS[parseInt($("tbDiv").value, 10)], names = parseTable($("tbText").value), out = $("tbOut");
+    if (!names.length) { out.innerHTML = '<div class="strip">No clubs found. Paste the table, or type one club per line.</div>'; return; }
+    var entries = names.map(function (raw, i) { return { name: raw, short: SHORT[CANON[norm(raw)] || norm(raw)] || raw, rank: div.base + i }; });
+    var warn = names.length !== div.size ? ["Expected " + div.size + " clubs for this division but read " + names.length + ". Check nothing was missed or doubled. Saved anyway."] : [];
+    saveEntries(entries, warn, "tbOut");
+  }
+
+  /* --- Premier League and Championship straight from football-data.org, through the Worker --- */
+  function demoStandings(code) {
+    var feed = window.__admin.mock && window.__admin.mock.standingsData;
+    if (feed && feed[code]) return Promise.resolve(feed[code]);
+    var pl = ["Manchester City FC", "Arsenal FC", "Liverpool FC", "Chelsea FC", "Manchester United FC", "Aston Villa FC", "Tottenham Hotspur FC", "Sunderland AFC", "Newcastle United FC",
+      "Brighton & Hove Albion FC", "Brentford FC", "Fulham FC", "Leeds United FC", "Everton FC", "Crystal Palace FC", "AFC Bournemouth", "West Ham United FC", "Nottingham Forest FC", "Wolverhampton Wanderers FC", "Burnley FC"];
+    var elc = ["Ipswich Town FC", "Southampton FC", "Leicester City FC", "Birmingham City FC", "Wrexham AFC", "Charlton Athletic FC"];
+    for (var i = elc.length; i < 24; i++) elc.push("Championship Club " + (i + 1) + " FC");
+    var names = code === "PL" ? pl : elc;
+    var table = names.map(function (n, i) { return { position: i + 1, team: { id: i, name: n, shortName: n.replace(/ FC$/, "") } }; });
+    return new Promise(function (res, rej) {
+      setTimeout(function () { if (window.__admin.mock && window.__admin.mock.standingsFail) rej(authError("HTTP")); else res({ standings: [{ type: "HOME", table: table.slice().reverse() }, { type: "TOTAL", table: table }] }); }, 40);
+    });
+  }
+  function getStandings(code) {
+    if (DEMO) return demoStandings(code);
+    if (!CONFIG.STANDINGS_URL) return Promise.reject(authError("NO_URL"));
+    return fetch(CONFIG.STANDINGS_URL.replace(/\/$/, "") + "/standings/" + code).then(function (r) {
+      if (r.status === 429) throw authError("RATE");
+      if (!r.ok) throw authError("HTTP");
+      return r.json();
+    });
+  }
+  function tableOf(data) {
+    var all = (data && data.standings) || [];
+    var st = all.filter(function (x) { return x.type === "TOTAL"; })[0] || all[0];
+    return st && st.table ? st.table.slice().sort(function (a, b) { return a.position - b.position; }) : [];
+  }
+  function loadStandings() {
+    var jobs = [{ code: "PL", div: DIVISIONS[0], label: "Premier League" }, { code: "ELC", div: DIVISIONS[1], label: "Championship" }];
+    var btn = $("stLoad"); if (btn) btn.disabled = true;
+    Promise.all(jobs.map(function (j) { return getStandings(j.code); })).then(function (results) {
+      var entries = [], warn = [];
+      results.forEach(function (data, i) {
+        var t = tableOf(data), d = jobs[i].div;
+        if (t.length !== d.size) warn.push(jobs[i].label + ": expected " + d.size + " clubs but the table has " + t.length + ". Check it looks right.");
+        t.forEach(function (row) {
+          var name = row.team.name;
+          entries.push({ name: name, short: SHORT[CANON[norm(name)] || norm(name)] || row.team.shortName || name, rank: d.base + row.position - 1 });
+        });
+      });
+      if (!entries.length) throw authError("EMPTY");
+      return saveEntries(entries, warn, "stOut");
+    }).catch(function (e) {
+      var m = { NO_URL: "The standings Worker isn't set up yet. Add its address to STANDINGS_URL at the top of admin.html, or paste the tables below.",
+        RATE: "football-data.org is limiting requests. Wait a minute and try again, or paste the tables below.",
+        EMPTY: "The tables came back empty. Try again later, or paste them below." };
+      note(m[e.code] || (e && e.denied ? errText(e) : "Couldn't load the tables. Check the Worker address and your connection, or paste them below."), "bad");
+    }).then(function () { if ($("stLoad")) $("stLoad").disabled = false; });
+  }
+  $("positionsView").addEventListener("click", function (e) {
+    if (e.target.id === "tbRead") readTable();
+    if (e.target.id === "stLoad") loadStandings();
+  });
 
   /* ---------------- Rounds tab ---------------- */
   function tiesOf(rid) { return (S.season.ties || {})[rid] || {}; }
