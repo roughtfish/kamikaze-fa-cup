@@ -978,9 +978,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       $("tallyLab").textContent = "Ties called"; $("sumLab").textContent = "If all correct";
       $("tallyBig").innerHTML = called + " <span>of " + needed + (needed < ids.length ? " (" + (ids.length - needed) + " can't be picked)" : "") + "</span>";
       $("sumNum").textContent = potential ? fmtPts(potential) + " pts" : "0";
-      var blanks = ids.filter(function (t) { var pk = round.picks[t]; return !(pk && pk.side) && autoChoice(round.ties[t], used); }).length;
-      $("actions").innerHTML = blanks
-        ? '<button type="button" class="btn secondary" id="fillBtn">Fill the ' + blanks + " blank" + (blanks === 1 ? "" : "s") + " with the safest pick</button>" : "";
+      $("actions").innerHTML = "";
     } else {
       var allDone = round.status === "resolved";
       $("tallyLab").textContent = allDone ? "Round score" : "Status";
@@ -1025,26 +1023,6 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     }
     var cur = round.picks[tid];
     savePick(round, tid, cur && cur.side === key ? null : key);
-  });
-
-  $("actions").addEventListener("click", function (e) {
-    if (e.target.id !== "fillBtn") return;
-    var round = roundById(S.view); if (!round || !isEditable(round)) return;
-    var used = usedBefore(round.id), todo = [];
-    tieIds(round).forEach(function (tid) {
-      var pk = round.picks[tid]; if (pk && pk.side) return;
-      var ch = autoChoice(round.ties[tid], used); if (ch) todo.push([tid, ch]);
-    });
-    $("msg").textContent = "";
-    var okCount = 0, i = 0;
-    function worker() {
-      if (i >= todo.length) return Promise.resolve();
-      var job = todo[i++];
-      return savePick(round, job[0], job[1]).then(function (ok) { if (ok) okCount++; return worker(); });
-    }
-    Promise.all([worker(), worker(), worker(), worker()]).then(function () {
-      if (okCount === todo.length) $("msg").textContent = "Filled " + okCount + " tie" + (okCount === 1 ? "" : "s") + ". Tap any of them to change it.";
-    });
   });
 
   $("rounds").addEventListener("click", function (e) {
