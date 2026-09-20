@@ -653,9 +653,14 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     });
   }
 
+  // The live season can change while a page is open, so ask again whenever someone signs in or joins.
+  function refreshSeason() {
+    return db.get("kamikaze_fa/activeSeasonId").then(function (sid) { if (sid) S.sid = sid; }).catch(function () {});
+  }
+
   // Signed in: find out who this account is, then load the game.
   function enter() {
-    return db.get(P("managers/" + AUTH.uid)).catch(function () { return null; }).then(function (who) {
+    return refreshSeason().then(function () { return db.get(P("managers/" + AUTH.uid)); }).catch(function () { return null; }).then(function (who) {
       if (!who) { $("loading").hidden = true; return showAuth("finish", "You're signed in, but you haven't joined the game yet."); }
       S.who = who;
       return loadApp();
@@ -693,7 +698,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       INVALID_PASSWORD: "That email and password don't match.", EMAIL_NOT_FOUND: "That email and password don't match.",
       EMAIL_EXISTS: "There's already an account with that email. Sign in instead, or reset your password.",
       WEAK_PASSWORD: "Pick a password of at least 6 characters.", INVALID_EMAIL: "That doesn't look like a valid email address.",
-      API: "The Firebase API key in this page isn't right. Check the API_KEY line at the top of the script.", TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again.", USER_DISABLED: "This account has been switched off. Ask the admin."
+      API: "The Firebase API key in this page isn't right. Check the API_KEY line at the top of the script.", STALE_SEASON: "The game has moved on to a new season. Reload this page and try again.", TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again.", USER_DISABLED: "This account has been switched off. Ask the admin."
     };
     return map[code] || "Something went wrong. Check your connection and try again.";
   }
@@ -731,7 +736,10 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     }).then(function () {
       return db.put(P("managers/" + AUTH.uid), { name: name, code: code.toUpperCase() }).catch(function (e) {
         return db.remove(P("names/" + key)).catch(function () {}).then(function () {
-          if (e && e.denied) throw authError("BAD_CODE"); throw e;
+          if (!(e && e.denied)) throw e;
+          return db.get("kamikaze_fa/activeSeasonId").catch(function () { return S.sid; }).then(function (cur) {
+            throw authError(cur && cur !== S.sid ? "STALE_SEASON" : "BAD_CODE");
+          });
         });
       });
     });
@@ -758,7 +766,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     if (authMode === "join") {
       if (pass.length < 6) return authNote(authMsg("WEAK_PASSWORD"));
       busy(true);
-      return Authn.signUp(email, pass).then(function (j) {
+      return refreshSeason().then(function () { return Authn.signUp(email, pass); }).then(function (j) {
         setAuth(j);
         return claim(name, code).then(enter).catch(function (e) {
           var tok = AUTH.idToken;
@@ -770,7 +778,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       }).catch(function (e) { authNote(authMsg(e.code)); }).then(function () { busy(false); });
     }
     busy(true);   // "finish": already signed in, just needs a name and code
-    return claim(name, code).then(enter).catch(function (e) {
+    return refreshSeason().then(function () { return claim(name, code); }).then(enter).catch(function (e) {
       authNote(e.code === "NAME_TAKEN" ? "That name is already taken. Pick another one." : e.code === "BAD_CODE" ? "That join code isn't right." : authMsg(e.code));
     }).then(function () { busy(false); });
   }
