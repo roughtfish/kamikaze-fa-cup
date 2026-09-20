@@ -279,6 +279,7 @@ nav.tabs button{padding:10px 11px}
 .rulestable th.pl,.rulestable td.pl{padding-left:18px}
 /* on the results screen the highlighted team is the winner, not somebody's pick */
 .side.resbtn[aria-pressed="true"]::after{content:"Won"}
+.rulestable td.num{white-space:nowrap}
 
 </style>
 </head>
@@ -346,9 +347,9 @@ nav.tabs button{padding:10px 11px}
 
   var ROUND_DEFS = [
     { id: "r3", name: "Round 3", mult: 1, ties: 32 }, { id: "r4", name: "Round 4", mult: 1, ties: 16 }, { id: "r5", name: "Round 5", mult: 1, ties: 8 },
-    { id: "qf", name: "Quarter-finals", mult: 2, ties: 4 }, { id: "sf", name: "Semi-finals", mult: 2, ties: 2 }, { id: "f", name: "Final", mult: 3, ties: 1 }
+    { id: "qf", name: "Quarter-finals", mult: 1.5, ties: 4 }, { id: "sf", name: "Semi-finals", mult: 1.5, ties: 2 }, { id: "f", name: "Final", mult: 2, ties: 1 }
   ];
-  var DEFAULT_CFG = { maxUses: 2, cap: 30, spread: 17 };
+  var DEFAULT_CFG = { maxUses: 3, cap: 30, spread: 30 };
 
   var params = new URLSearchParams(location.search);
   var DEMO = params.get("demo") === "1";
@@ -1322,16 +1323,32 @@ nav.tabs button{padding:10px 11px}
   }
 
   /* --- open: progress, extend, lock --- */
+  // Where a manager stands in a round: picks made, ties they could pick, and ties they are locked out of
+  // (both teams already used up for them, so nothing can be picked there).
+  function pickState(uid, rid) {
+    var ties = tiesOf(rid), ids = Logic.tieIds(ties), mine = picksOf(rid)[uid] || {}, used = Logic.usedBefore(S.season, uid, rid), mx = cfg().maxUses;
+    var made = 0, pickable = 0, dead = [];
+    ids.forEach(function (t) {
+      var x = ties[t], hOk = (used[Logic.clubOf(x, "home")] || 0) < mx, aOk = (used[Logic.clubOf(x, "away")] || 0) < mx;
+      if (!hOk && !aOk) { dead.push(x.home.short + " v " + x.away.short); return; }
+      pickable++; if (Logic.validSide(mine[t])) made++;
+    });
+    var status = pickable === 0 ? "locked out" : made === pickable ? "done" : made === 0 ? "none yet" : "partly";
+    return { made: made, pickable: pickable, dead: dead, total: ids.length, status: status };
+  }
+
   function openHTML(rid, r) {
     var ties = tiesOf(rid), ids = Logic.tieIds(ties), picks = picksOf(rid), mgrs = managerList();
+    var anyDead = false;
     var rows = mgrs.map(function (m) {
-      var mine = picks[m.uid] || {}, n = ids.filter(function (t) { return Logic.validSide(mine[t]); }).length;
-      return "<tr><td>" + esc(m.name) + '</td><td class="num">' + n + " of " + ids.length + '</td><td class="num">' + (n === ids.length ? "done" : n === 0 ? "none yet" : "partly") + "</td></tr>";
+      var st = pickState(m.uid, rid); if (st.dead.length) anyDead = true;
+      return "<tr><td>" + esc(m.name) + (st.dead.length ? '<small class="raw" style="display:block;font-family:var(--body)">Locked out of: ' + esc(st.dead.join(", ")) + "</small>" : "") + '</td><td class="num">' + st.made + " of " + st.pickable +
+        (st.dead.length ? '<small class="raw" style="display:block;font-family:var(--body)">' + st.dead.length + " locked out</small>" : "") + '</td><td class="num">' + st.status + "</td></tr>";
     }).join("");
     var overdue = Date.now() >= r.locksAt;
     return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>' + esc(r.name) + ' is open</h2><span class="hint">Locks ' + esc(fmtWhen(r.locksAt)) + (overdue ? " (time's up)" : "") + "</span></div>" +
       '<div class="adminbox">' + (mgrs.length ? '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Manager</th><th class="num">Picks</th><th class="num">Status</th></tr>' + rows + "</table>" : '<p class="hint" style="margin:0">Nobody has joined yet.</p>') +
-      '<p class="hint" style="margin:0">Anything left blank is filled in for the manager when you lock: the higher-ranked team, or the other if that one is used up.</p>' +
+      '<p class="hint" style="margin:0">Picks are counted out of the ties each manager can actually pick. \u201cLocked out\u201d means both teams in a tie are already used up for them, so nothing can be picked there and it scores 0. Anything else left blank is filled in when you lock: the higher-ranked team, or the other if that one is used up.</p>' +
       '<div class="btnrow"><button type="button" class="btn small" id="oRefresh">Refresh</button><button type="button" class="btn small" id="oLock">Lock ' + esc(r.name) + "</button></div>" +
       '<label><span>Change the lock time</span><input id="oExtend" type="datetime-local"></label><div class="btnrow"><button type="button" class="btn small secondary" id="oExtendGo">Save new lock time</button></div>' +
       "</div></div>";
@@ -1479,7 +1496,7 @@ nav.tabs button{padding:10px 11px}
     var mgrs = managerList(), openId = Object.keys(rounds()).filter(function (id) { return rounds()[id].status === "open"; })[0];
     var rows = mgrs.map(function (m) {
       var prog = "";
-      if (openId) { var ids = Logic.tieIds(tiesOf(openId)), mine = picksOf(openId)[m.uid] || {}; prog = ids.filter(function (t) { return Logic.validSide(mine[t]); }).length + " of " + ids.length; }
+      if (openId) { var st = pickState(m.uid, openId); prog = st.made + " of " + st.pickable + (st.dead.length ? " (" + st.dead.length + " locked out)" : ""); }
       return "<tr><td>" + esc(m.name) + '</td><td class="num">' + esc(prog) + '</td><td class="num"><button type="button" class="minibtn" data-rm="' + esc(m.uid) + '">Remove</button></td></tr>';
     }).join("");
     var lb = Logic.leaderboard(S.season);
