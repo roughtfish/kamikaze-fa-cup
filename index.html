@@ -227,6 +227,31 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
 [hidden]{display:none !important}
 
+/* Club crests: the image if we have one, otherwise a plain initials badge (an original shape, not a club mark) */
+.cc{position:relative;flex:0 0 auto;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}
+.cc img{width:100%;height:100%;object-fit:contain;display:block}
+.cc b{display:none;width:100%;height:100%;border-radius:50%;background:var(--raised);border:1px solid var(--line);color:var(--muted);
+  font-family:var(--disp);font-size:12px;font-weight:700;letter-spacing:.04em;align-items:center;justify-content:center}
+.cc.nocrest img{display:none}
+.cc.nocrest b{display:flex}
+.side .team{display:flex;align-items:center;gap:9px;padding-right:0}
+.side .team .tn{min-width:0;overflow-wrap:anywhere}
+.cc.sm{width:22px;height:22px}
+.cc.sm b{font-size:9.5px}
+.adminside .nm{display:flex;align-items:center;gap:8px}
+
+.side .team .tn{overflow-wrap:break-word}
+@media (max-width:480px){
+  .side .team{gap:7px}
+  .side .team .tn{font-size:17.5px}
+  .cc{width:26px;height:26px}
+  .cc b{font-size:11px}
+}
+
+/* team names scale with the screen so a long name like SUNDERLAND stays on one line beside its crest */
+.side .team .tn{font-size:clamp(14px,4.3vw,21px)}
+@media (max-width:400px){ .cc{width:24px;height:24px} .side .team{gap:6px} }
+
 </style>
 </head>
 <body>
@@ -317,6 +342,19 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   var NAME_OK = /^[A-Za-z0-9 ]{2,20}$/;
 
   function $(id) { return document.getElementById(id); }
+  // Only https images (plus small inline images in demo mode). Anything else is ignored.
+  function safeUrl(u) { u = String(u || ""); return /^https:\/\/[^\s"'<>]+$/.test(u) || (DEMO && /^data:image\/[a-z+]+[;,]/.test(u)) ? u : ""; }
+  function initials(name) {
+    var w = String(name || "").replace(/[^A-Za-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return "?";
+    return (w.length === 1 ? w[0].slice(0, 2) : w[0][0] + w[1][0]).toUpperCase();
+  }
+  function crestHTML(side, small) {
+    var u = safeUrl(side.crest);
+    return '<span class="cc' + (u ? "" : " nocrest") + (small ? " sm" : "") + '" aria-hidden="true">' +
+      (u ? '<img src="' + esc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add(\'nocrest\')">' : "") +
+      "<b>" + esc(initials(side.short || side.club)) + "</b></span>";
+  }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
 
   /* ---------------- scoring helpers (same maths as the rules page) ---------------- */
@@ -513,10 +551,16 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   function buildDemoSeed() {
     var cfg = { maxUses: 2, cap: 30, spread: 17 };
     var now = Date.now(), DAY = 86400000;
+    function demoCrest(name) {
+      if (name === "Everton") return "https://crests.invalid/broken.png";           // a picture that won't load, to show the fallback
+      if (["Man City", "Newcastle", "Arsenal", "Liverpool", "Sunderland"].indexOf(name) === -1) return undefined;
+      var hue = (name.charCodeAt(0) * 37 + name.length * 11) % 360;
+      return "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path d="M6 4h28v20c0 8-8 12-14 14C14 36 6 32 6 24z" fill="hsl(' + hue + ',55%,45%)"/></svg>');
+    }
     function mk(hS, hR, aS, aR, mult, winner) {
       var ph = chanceOf(hR, aR, cfg.spread), pa = 1 - ph;
       var t = {
-        home: { club: hS, short: hS, rank: hR, p: ph }, away: { club: aS, short: aS, rank: aR, p: pa },
+        home: { club: hS, short: hS, rank: hR, p: ph, crest: demoCrest(hS) }, away: { club: aS, short: aS, rank: aR, p: pa, crest: demoCrest(aS) },
         ptsHome: Math.min(1 / ph, cfg.cap) * mult, ptsAway: Math.min(1 / pa, cfg.cap) * mult
       };
       if (winner) t.winner = winner;
@@ -846,7 +890,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     }
     return '<button type="button" class="' + cls + '" data-tid="' + esc(tid) + '" data-side="' + key + '" aria-pressed="' + picked + '"' +
       (exhausted || !editable ? ' aria-disabled="true"' : "") + ">" +
-      '<span class="team">' + esc(me.short || me.club) + "</span>" +
+      '<span class="team">' + crestHTML(me) + '<span class="tn">' + esc(me.short || me.club) + "</span></span>" +
       '<span class="where">' + rankLabel(me.rank) + "</span>" +
       '<span class="pts">' + fmtPts(pts) + "<small>pts</small></span>" +
       '<span class="chance">' + fmtChance(p) + " to go through</span>" + usesRow + tag + res + "</button>";
