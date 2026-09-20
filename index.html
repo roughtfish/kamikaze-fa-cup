@@ -371,7 +371,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
   /* ---------------- scoring helpers (same maths as the rules page) ---------------- */
   function chanceOf(a, b, spread) { return 1 / (1 + Math.exp(-(b - a) / spread)); }
-  function fmtPts(x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }
+  function fmtPts(x) { return Number(x).toFixed(1); }
   function fmtChance(p) { var c = p * 100; if (c >= 99.5) return ">99%"; if (c < 1) return "<1%"; return Math.round(c) + "%"; }
   function tierClass(base) { return base < 2.5 ? "tier-safe" : base < 8 ? "tier-mid" : "tier-long"; }
   function ordinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
