@@ -576,7 +576,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   function P(path) { return "kamikaze_fa/seasons/" + S.sid + "/" + path; }
   function roundById(id) { return S.rounds.filter(function (r) { return r.id === id; })[0]; }
   function tieIds(round) { return Object.keys(round.ties || {}).sort(); }
-  function clubOf(tie, side) { return tie[side].club || tie[side].short; }
+  function clubOf(tie, side) { return tie[side].key || tie[side].club || tie[side].short; }
 
   /* ---------------- loading ---------------- */
   function loadRound(rid) {
@@ -649,7 +649,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       INVALID_PASSWORD: "That email and password don't match.", EMAIL_NOT_FOUND: "That email and password don't match.",
       EMAIL_EXISTS: "There's already an account with that email. Sign in instead, or reset your password.",
       WEAK_PASSWORD: "Pick a password of at least 6 characters.", INVALID_EMAIL: "That doesn't look like a valid email address.",
-      TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again.", USER_DISABLED: "This account has been switched off. Ask the admin."
+      API: "The Firebase API key in this page isn't right. Check the API_KEY line at the top of the script.", TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again.", USER_DISABLED: "This account has been switched off. Ask the admin."
     };
     return map[code] || "Something went wrong. Check your connection and try again.";
   }
