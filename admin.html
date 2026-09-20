@@ -228,6 +228,31 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
 [hidden]{display:none !important}
 
+/* Club crests: the image if we have one, otherwise a plain initials badge (an original shape, not a club mark) */
+.cc{position:relative;flex:0 0 auto;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}
+.cc img{width:100%;height:100%;object-fit:contain;display:block}
+.cc b{display:none;width:100%;height:100%;border-radius:50%;background:var(--raised);border:1px solid var(--line);color:var(--muted);
+  font-family:var(--disp);font-size:12px;font-weight:700;letter-spacing:.04em;align-items:center;justify-content:center}
+.cc.nocrest img{display:none}
+.cc.nocrest b{display:flex}
+.side .team{display:flex;align-items:center;gap:9px;padding-right:0}
+.side .team .tn{min-width:0;overflow-wrap:anywhere}
+.cc.sm{width:22px;height:22px}
+.cc.sm b{font-size:9.5px}
+.adminside .nm{display:flex;align-items:center;gap:8px}
+
+.side .team .tn{overflow-wrap:break-word}
+@media (max-width:480px){
+  .side .team{gap:7px}
+  .side .team .tn{font-size:17.5px}
+  .cc{width:26px;height:26px}
+  .cc b{font-size:11px}
+}
+
+/* team names scale with the screen so a long name like SUNDERLAND stays on one line beside its crest */
+.side .team .tn{font-size:clamp(14px,4.3vw,21px)}
+@media (max-width:400px){ .cc{width:24px;height:24px} .side .team{gap:6px} }
+
 .notebar{margin:14px 0 0;padding:10px 14px;border-radius:10px;font-size:14px;border:1px solid var(--go-dim);background:rgba(25,226,160,.08);color:var(--go)}
 .notebar.bad{border-color:var(--danger);background:rgba(255,91,126,.08);color:var(--danger)}
 .cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -315,6 +340,18 @@ nav.tabs button{padding:10px 11px}
   var AUTH = { uid: null, idToken: null, refreshToken: null, exp: 0, email: null };
 
   function $(id) { return document.getElementById(id); }
+  function safeUrl(u) { u = String(u || ""); return /^https:\/\/[^\s"'<>]+$/.test(u) || (DEMO && /^data:image\/[a-z+]+[;,]/.test(u)) ? u : ""; }
+  function initials(name) {
+    var w = String(name || "").replace(/[^A-Za-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return "?";
+    return (w.length === 1 ? w[0].slice(0, 2) : w[0][0] + w[1][0]).toUpperCase();
+  }
+  function crestHTML(side, small) {
+    var u = safeUrl(side.crest);
+    return '<span class="cc' + (u ? "" : " nocrest") + (small ? " sm" : "") + '" aria-hidden="true">' +
+      (u ? '<img src="' + esc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add(\'nocrest\')">' : "") +
+      "<b>" + esc(initials(side.short || side.club)) + "</b></span>";
+  }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
   function round2(x) { return Math.round(x * 100) / 100; }
   function round4(x) { return Math.round(x * 10000) / 10000; }
@@ -345,8 +382,8 @@ nav.tabs button{padding:10px 11px}
     freezeTie: function (t, cfg, mult) {
       var ph = Logic.chance(t.home.rank, t.away.rank, cfg.spread), pa = 1 - ph;
       return {
-        home: { key: t.home.key, club: t.home.club, short: t.home.short, rank: t.home.rank, p: round4(ph) },
-        away: { key: t.away.key, club: t.away.club, short: t.away.short, rank: t.away.rank, p: round4(pa) },
+        home: { key: t.home.key, club: t.home.club, short: t.home.short, rank: t.home.rank, p: round4(ph), crest: t.home.crest },
+        away: { key: t.away.key, club: t.away.club, short: t.away.short, rank: t.away.rank, p: round4(pa), crest: t.away.crest },
         ptsHome: round4(Math.min(1 / ph, cfg.cap) * mult),
         ptsAway: round4(Math.min(1 / pa, cfg.cap) * mult)
       };
@@ -889,7 +926,9 @@ nav.tabs button{padding:10px 11px}
     entries.forEach(function (en) {
       var key = clubKey(en.name), old = registry()[key];
       if (!old) fresh++; else if (old.rank !== en.rank) moved++;
-      updates["clubs/" + key] = { name: en.name, short: en.short, rank: en.rank };
+      var rec = { name: en.name, short: en.short, rank: en.rank }, crest = en.crest || (old && old.crest);   // a pasted table has no crests, so keep the one we had
+      if (crest) rec.crest = crest;
+      updates["clubs/" + key] = rec;
     });
     // The table you've just read is the whole division, so anything else still filed in that range is stale.
     Object.keys(registry()).forEach(function (key) {
@@ -924,7 +963,11 @@ nav.tabs button{padding:10px 11px}
     var elc = ["Ipswich Town FC", "Southampton FC", "Leicester City FC", "Birmingham City FC", "Wrexham AFC", "Charlton Athletic FC"];
     for (var i = elc.length; i < 24; i++) elc.push("Championship Club " + (i + 1) + " FC");
     var names = code === "PL" ? pl : elc;
-    var table = names.map(function (n, i) { return { position: i + 1, team: { id: i, name: n, shortName: n.replace(/ FC$/, "") } }; });
+    var table = names.map(function (n, i) {
+      var hue = (n.charCodeAt(0) * 37 + n.length * 11) % 360;
+      return { position: i + 1, team: { id: i, name: n, shortName: n.replace(/ FC$/, ""),
+        crest: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path d="M6 4h28v20c0 8-8 12-14 14C14 36 6 32 6 24z" fill="hsl(' + hue + ',55%,45%)"/></svg>') } };
+    });
     return new Promise(function (res, rej) {
       setTimeout(function () { if (window.__admin.mock && window.__admin.mock.standingsFail) rej(authError("HTTP")); else res({ standings: [{ type: "HOME", table: table.slice().reverse() }, { type: "TOTAL", table: table }] }); }, 40);
     });
@@ -954,7 +997,7 @@ nav.tabs button{padding:10px 11px}
         else full.push({ base: d.base, size: d.size });
         t.forEach(function (row) {
           var name = row.team.name;
-          entries.push({ name: name, short: SHORT[CANON[norm(name)] || norm(name)] || row.team.shortName || name, rank: d.base + row.position - 1 });
+          entries.push({ name: name, short: SHORT[CANON[norm(name)] || norm(name)] || row.team.shortName || name, rank: d.base + row.position - 1, crest: safeUrl(row.team.crest) || undefined });
         });
       });
       if (!entries.length) throw authError("EMPTY");
@@ -1003,7 +1046,7 @@ nav.tabs button{padding:10px 11px}
   }
   function resolveClub(raw) {
     var name = raw.trim(), key = clubKey(name), c = registry()[key];
-    if (c) return { raw: name, matched: true, key: key, club: c.name, short: c.short || c.name, rank: c.rank };
+    if (c) return { raw: name, matched: true, key: key, club: c.name, short: c.short || c.name, rank: c.rank, crest: c.crest };
     var best = tokenSuggest(name);
     if (!best) {
       var n = CANON[norm(name)] || norm(name), bd = 99;
@@ -1055,7 +1098,7 @@ nav.tabs button{padding:10px 11px}
       if (sd.sug) buttons += '<button type="button" class="minibtn" data-act="use" data-i="' + i + '" data-k="' + key + '">Use ' + esc(sd.sug.name) + "</button> ";
       buttons += '<button type="button" class="minibtn" data-act="nl" data-i="' + i + '" data-k="' + key + '">Non-league (93)</button>';
     }
-    return '<div class="adminside"><span class="nm">' + esc(sd.matched ? sd.short : sd.club) + "</span>" +
+    return '<div class="adminside"><span class="nm">' + crestHTML(sd, true) + "<span>" + esc(sd.matched ? sd.short : sd.club) + "</span></span>" +
       (sd.matched && sd.raw !== sd.short ? '<span class="raw">typed as \u201c' + esc(sd.raw) + "\u201d</span>" : "") +
       '<span class="line">' + status + "</span>" +
       '<span class="line"><label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)">Position <input class="rankin" type="number" min="1" max="200" data-i="' + i + '" data-k="' + key + '" value="' + (sd.rank === null ? "" : sd.rank) + '"></label></span>' +
@@ -1085,8 +1128,8 @@ nav.tabs button{padding:10px 11px}
     var d = S.draw, rid = S.round, ties = {};
     d.ties.forEach(function (t, i) {
       ties[padId(i)] = {
-        home: { key: t.home.key || clubKey(t.home.club), club: t.home.club, short: t.home.short, rank: t.home.rank },
-        away: { key: t.away.key || clubKey(t.away.club), club: t.away.club, short: t.away.short, rank: t.away.rank }
+        home: { key: t.home.key || clubKey(t.home.club), club: t.home.club, short: t.home.short, rank: t.home.rank, crest: t.home.crest },
+        away: { key: t.away.key || clubKey(t.away.club), club: t.away.club, short: t.away.short, rank: t.away.rank, crest: t.away.crest }
       };
     });
     S.busy = true;
@@ -1191,7 +1234,7 @@ nav.tabs button{padding:10px 11px}
       var x = ties[t];
       function btn(side) {
         var w = x.winner === side;
-        return '<button type="button" class="side ro' + (w ? " won picked" : "") + '" style="min-height:0;padding:12px 14px" data-act="win" data-t="' + t + '" data-side="' + side + '" aria-pressed="' + w + '"><span class="team">' + esc(x[side].short) + '</span><span class="where">' + rankLabel(x[side].rank) + "</span></button>";
+        return '<button type="button" class="side ro' + (w ? " won picked" : "") + '" style="min-height:0;padding:12px 14px" data-act="win" data-t="' + t + '" data-side="' + side + '" aria-pressed="' + w + '"><span class="team">' + crestHTML(x[side], true) + '<span class="tn">' + esc(x[side].short) + '</span></span><span class="where">' + rankLabel(x[side].rank) + "</span></button>";
       }
       return '<div class="adminrow">' + btn("home") + btn("away") + "</div>";
     }).join("");
@@ -1251,7 +1294,7 @@ nav.tabs button{padding:10px 11px}
     var act = t.getAttribute && t.getAttribute("data-act");
     if (act && S.draw) {
       var i = parseInt(t.getAttribute("data-i"), 10), k = t.getAttribute("data-k"), sd = S.draw.ties[i][k];
-      if (act === "use" && sd.sug) S.draw.ties[i][k] = { raw: sd.raw, matched: true, key: clubKey(sd.sug.name), club: sd.sug.name, short: sd.sug.short || sd.sug.name, rank: sd.sug.rank };
+      if (act === "use" && sd.sug) S.draw.ties[i][k] = { raw: sd.raw, matched: true, key: clubKey(sd.sug.name), club: sd.sug.name, short: sd.sug.short || sd.sug.name, rank: sd.sug.rank, crest: sd.sug.crest };
       if (act === "nl") { sd.rank = 93; sd.manual = true; }
       renderDrawCheck();
     }
