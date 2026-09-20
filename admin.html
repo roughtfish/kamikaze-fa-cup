@@ -263,6 +263,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 .lbtable tr.me td.sticky{background:color-mix(in srgb,var(--go) 8%,var(--panel))}
 .lbtable td.total,.lbtable th.total{color:var(--ink);font-weight:600}
 .lbtable td.top{color:var(--go);font-weight:600}
+.lbtable small{display:block;color:var(--faint);font-family:var(--body);font-size:11px;font-weight:400;line-height:1.1}
 
 .notebar{margin:14px 0 0;padding:10px 14px;border-radius:10px;font-size:14px;border:1px solid var(--go-dim);background:rgba(25,226,160,.08);color:var(--go)}
 .notebar.bad{border-color:var(--danger);background:rgba(255,91,126,.08);color:var(--danger)}
@@ -466,32 +467,36 @@ nav.tabs button{padding:10px 11px}
       return out;
     },
 
-    // Points for one manager in one round (only ties with a winner count).
+    // Points for one manager in one round (only ties with a winner count). "upset" is the most league places
+    // between the two clubs in a tie where they backed the lower-placed club and it went through.
     roundPoints: function (season, rid, uid) {
-      var ties = (season.ties || {})[rid] || {}, mine = ((season.picks || {})[rid] || {})[uid] || {}, pts = 0, correct = 0, best = 0;
+      var ties = (season.ties || {})[rid] || {}, mine = ((season.picks || {})[rid] || {})[uid] || {}, pts = 0, correct = 0, best = 0, upset = 0, upsetClub = "";
       Object.keys(mine).forEach(function (tid) {
         var tie = ties[tid], pk = mine[tid];
         if (!tie || !tie.winner || !Logic.validSide(pk) || pk.side !== tie.winner) return;
-        var p = pk.side === "home" ? tie.ptsHome : tie.ptsAway;
+        var p = pk.side === "home" ? tie.ptsHome : tie.ptsAway, other = pk.side === "home" ? "away" : "home";
         pts += p; correct++; if (p > best) best = p;
+        var gap = tie[pk.side].rank - tie[other].rank;                    // above zero only when they backed the lower-placed club
+        if (gap > upset) { upset = gap; upsetClub = tie[pk.side].short || tie[pk.side].club || ""; }
       });
-      return { pts: pts, correct: correct, best: best };
+      return { pts: pts, correct: correct, best: best, upset: upset, upsetClub: upsetClub };
     },
 
     // Leaderboard from resolved rounds only. Ties broken by correct calls, then best call.
     leaderboard: function (season) {
       var rows = Object.keys(season.managers || {}).map(function (uid) {
-        var row = { name: season.managers[uid].name, points: 0, correct: 0, bestCall: 0, rounds: {} };
+        var row = { name: season.managers[uid].name, points: 0, correct: 0, bestCall: 0, bestGap: 0, bestGapClub: "", rounds: {} };
         Object.keys(season.rounds || {}).forEach(function (rid) {
           if (season.rounds[rid].status !== "resolved") return;
           var r = Logic.roundPoints(season, rid, uid);
           row.points += r.pts; row.correct += r.correct; if (r.best > row.bestCall) row.bestCall = r.best;
+          if (r.upset > row.bestGap) { row.bestGap = r.upset; row.bestGapClub = r.upsetClub; }
           row.rounds[rid] = round2(r.pts);
         });
         row.points = round2(row.points); row.bestCall = round2(row.bestCall);
         return row;
       });
-      rows.sort(function (a, b) { return b.points - a.points || b.correct - a.correct || b.bestCall - a.bestCall || a.name.localeCompare(b.name); });
+      rows.sort(function (a, b) { return b.points - a.points || b.correct - a.correct || b.bestGap - a.bestGap || a.name.localeCompare(b.name); });
       return rows;
     }
   };
@@ -1460,11 +1465,11 @@ nav.tabs button{padding:10px 11px}
     var ids = ROUND_DEFS.map(function (d) { return d.id; }).filter(function (id) { return rows.some(function (r) { return r.rounds && r.rounds[id] !== undefined; }); });
     var top = {}; ids.forEach(function (id) { top[id] = Math.max.apply(null, rows.map(function (r) { return (r.rounds && r.rounds[id]) || 0; })); });
     return '<div class="lbwrap"><table class="lbtable"><tr><th class="sticky s1">#</th><th class="sticky s2">Manager</th><th class="n total">Total</th>' +
-      ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + '<th class="n">Correct</th><th class="n">Best call</th></tr>' +
+      ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + '<th class="n">Correct</th><th class="n">Biggest gap</th></tr>' +
       rows.map(function (r, i) {
         return '<tr><td class="pos sticky s1">' + (i + 1) + '</td><td class="sticky s2">' + esc(r.name) + '</td><td class="n total">' + fmt1(r.points) + "</td>" +
           ids.map(function (id) { var v = (r.rounds && r.rounds[id]) || 0; return '<td class="n' + (v > 0 && v === top[id] ? " top" : "") + '">' + (v ? fmt1(v) : "0") + "</td>"; }).join("") +
-          '<td class="n">' + r.correct + '</td><td class="n">' + (r.bestCall ? fmt1(r.bestCall) : "-") + "</td></tr>";
+          '<td class="n">' + r.correct + '</td><td class="n">' + (r.bestGap ? r.bestGap + "<small>" + esc(r.bestGapClub || "") + "</small>" : "-") + "</td></tr>";
       }).join("") + "</table></div>";
   }
 
