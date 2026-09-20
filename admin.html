@@ -330,8 +330,8 @@ nav.tabs button{padding:10px 11px}
   /* ==================================================================== */
 
   var ROUND_DEFS = [
-    { id: "r3", name: "Round 3", mult: 1 }, { id: "r4", name: "Round 4", mult: 1 }, { id: "r5", name: "Round 5", mult: 1 },
-    { id: "qf", name: "Quarter-finals", mult: 2 }, { id: "sf", name: "Semi-finals", mult: 2 }, { id: "f", name: "Final", mult: 3 }
+    { id: "r3", name: "Round 3", mult: 1, ties: 32 }, { id: "r4", name: "Round 4", mult: 1, ties: 16 }, { id: "r5", name: "Round 5", mult: 1, ties: 8 },
+    { id: "qf", name: "Quarter-finals", mult: 2, ties: 4 }, { id: "sf", name: "Semi-finals", mult: 2, ties: 2 }, { id: "f", name: "Final", mult: 3, ties: 1 }
   ];
   var DEFAULT_CFG = { maxUses: 2, cap: 30, spread: 17 };
 
@@ -695,7 +695,7 @@ nav.tabs button{padding:10px 11px}
 
 
   /* ---------------- state and loading ---------------- */
-  var S = { sid: null, season: {}, tab: "season", round: "r3", draw: null, lockReport: null, busy: false, newSeason: false };
+  var S = { sid: null, season: {}, tab: "season", round: "r3", draw: null, drawForce: false, lockReport: null, busy: false, newSeason: false };
 
   function seasonPath() { return "kamikaze_fa/seasons/" + S.sid; }
   function cfg() { return S.season.config || DEFAULT_CFG; }
@@ -1136,6 +1136,33 @@ nav.tabs button{padding:10px 11px}
     return { ties: ties, skipped: skipped };
   }
   function rankOk(sd) { return typeof sd.rank === "number" && sd.rank >= 1 && sd.rank <= 200; }
+  // Things that look wrong about a draw: the number of ties, a club that lost last round, a winner left out.
+  // pairs: [homeKey, awayKey, homeName, awayName]
+  function winnersOf(rid) {
+    var out = {}, ties = tiesOf(rid);
+    Logic.tieIds(ties).forEach(function (t) {
+      var x = ties[t]; if (!x.winner) return;
+      var side = x[x.winner];
+      out[side.key || clubKey(side.club || side.short)] = side.short || side.club;   // same identity the draw check uses, even for ties saved without a key
+    });
+    return out;
+  }
+  function drawProblems(rid, pairs) {
+    var probs = [], def = roundDef(rid), n = pairs.length, idx = ROUND_DEFS.indexOf(def), prev = idx > 0 ? ROUND_DEFS[idx - 1] : null;
+    if (def && n !== def.ties) probs.push(n + " tie" + (n === 1 ? "" : "s") + ", but " + def.name + " normally has " + def.ties + ".");
+    var pr = prev && rounds()[prev.id];
+    if (pr && pr.status === "resolved") {
+      var winners = winnersOf(prev.id), inDraw = {}, out = [];
+      pairs.forEach(function (p) { [0, 1].forEach(function (i) { inDraw[p[i]] = 1; if (!winners[p[i]]) out.push(p[2 + i]); }); });
+      if (out.length) probs.push(out.join(", ") + (out.length === 1 ? " didn't" : " didn't") + " go through from " + prev.name + ".");
+      var missing = Object.keys(winners).filter(function (k) { return !inDraw[k]; }).map(function (k) { return winners[k]; });
+      if (missing.length) probs.push(missing.length + " " + prev.name + " winner" + (missing.length === 1 ? " is" : "s are") + " not in the draw: " + missing.join(", ") + ".");
+    }
+    return probs;
+  }
+  function drawPairs(ties) {
+    return ties.map(function (t) { return [t.home.key || clubKey(t.home.club), t.away.key || clubKey(t.away.club), t.home.short || t.home.club, t.away.short || t.away.club]; });
+  }
   function drawDuplicates(ties) {
     var seen = {}, dups = [];
     ties.forEach(function (t) { [t.home, t.away].forEach(function (sd) { var k = sd.key || clubKey(sd.club); if (seen[k]) dups.push(sd.club); seen[k] = 1; }); });
@@ -1152,7 +1179,7 @@ nav.tabs button{padding:10px 11px}
       '<div class="adminbox"><label><span>Picks lock at</span><input id="oWhen" type="datetime-local"></label>' +
       '<p class="hint" style="margin:0">Opening freezes each tie\'s chance and points using spread ' + c.spread + ", cap " + c.cap + " and the ×" + r.mult + " multiplier. Players can then see the ties and make picks.</p>" +
       '<div class="btnrow"><button type="button" class="btn small" id="oGo">Open ' + esc(r.name) + "</button></div></div></div>" : "";
-    return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>Enter the draw</h2><span class="hint">' + esc(r.name) + "</span></div>" +
+    return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>Enter the draw</h2><span class="hint">' + esc(r.name) + (roundDef(rid) ? " · " + roundDef(rid).ties + " ties expected" : "") + "</span></div>" +
       '<div class="adminbox"><label><span>Paste the draw, one tie per line (Home v Away)</span>' +
       '<textarea id="dText" spellcheck="false" placeholder="Manchester City v Bradford City&#10;Newcastle United v Grimsby Town&#10;..."></textarea></label>' +
       '<div class="btnrow"><button type="button" class="btn small" id="dRead">Read the draw</button></div>' +
@@ -1200,11 +1227,13 @@ nav.tabs button{padding:10px 11px}
   function updateDrawSummary() {
     var d = S.draw; if (!d || !$("dSum")) return;
     var missing = 0; d.ties.forEach(function (t) { [t.home, t.away].forEach(function (sd) { if (!rankOk(sd)) missing++; }); });
-    var dups = drawDuplicates(d.ties);
-    $("dHint").textContent = d.ties.length + " tie" + (d.ties.length === 1 ? "" : "s");
+    var dups = drawDuplicates(d.ties), def = roundDef(S.round), probs = drawProblems(S.round, drawPairs(d.ties));
+    $("dHint").textContent = d.ties.length + (def ? " of " + def.ties : "") + " tie" + (d.ties.length === 1 && !def ? "" : "s");
     $("dSum").innerHTML = "<b>" + d.ties.length + "</b> ties read. " + (missing ? "<b>" + missing + "</b> still need a position." : "Every club has a position.") +
-      (dups.length ? ' <span style="color:var(--danger)">' + esc(dups.join(", ")) + " appears more than once. A team can only be in one tie a round.</span>" : "");
-    $("dSave").disabled = missing > 0 || dups.length > 0;
+      (dups.length ? ' <span style="color:var(--danger)">' + esc(dups.join(", ")) + " appears more than once. A team can only be in one tie a round.</span>" : "") +
+      (probs.length ? '<div class="strip stuck" style="margin:10px -16px 0">' + probs.map(function (p) { return "<div>" + esc(p) + "</div>"; }).join("") +
+        '<label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;color:var(--ink)"><input type="checkbox" id="dForce" style="width:auto;margin-top:3px"' + (S.drawForce ? " checked" : "") + "><span>Save anyway (for a test round, or a draw that really is unusual)</span></label></div>" : "");
+    $("dSave").disabled = missing > 0 || dups.length > 0 || (probs.length > 0 && !S.drawForce);
     var nl = unmatchedCount(), b = $("dNlAll");
     if (b) { b.textContent = "Set the " + nl + " unrecognised club" + (nl === 1 ? "" : "s") + " as non-league (93)"; $("dNlBox").hidden = nl === 0; }
   }
@@ -1254,7 +1283,8 @@ nav.tabs button{padding:10px 11px}
     if (!(locksAt > Date.now())) return note("The lock time needs to be in the future.", "bad");
     var missing = ids.some(function (t) { return !rankOk(ties[t].home) || !rankOk(ties[t].away); });
     if (missing) return note("Some clubs have no position. Re-enter the draw.", "bad");
-    if (!confirm("Open " + r.name + " with " + ids.length + " ties, locking " + fmtWhen(locksAt) + "? Players will be able to see the ties and pick.")) return;
+    var probs = drawProblems(rid, ids.map(function (t) { var x = ties[t]; return [x.home.key || clubKey(x.home.club), x.away.key || clubKey(x.away.club), x.home.short, x.away.short]; }));
+    if (!confirm((probs.length ? "Check before you open:\n\n" + probs.join("\n") + "\n\n" : "") + "Open " + r.name + " with " + ids.length + " ties, locking " + fmtWhen(locksAt) + "? Players will be able to see the ties and pick.")) return;
     var c = cfg(), updates = {};
     ids.forEach(function (t) {
       var x = ties[t]; x.home.key = x.home.key || clubKey(x.home.club); x.away.key = x.away.key || clubKey(x.away.club);
@@ -1370,7 +1400,7 @@ nav.tabs button{padding:10px 11px}
     if (w) { toggleWinner(w.getAttribute("data-t"), w.getAttribute("data-side")); return; }
     var id = t.id;
     if (id === "dRead") {
-      var out = parseDraw($("dText").value); S.draw = { round: S.round, ties: out.ties, skipped: out.skipped }; renderDrawCheck(); return;
+      var out = parseDraw($("dText").value); S.draw = { round: S.round, ties: out.ties, skipped: out.skipped }; S.drawForce = false; renderDrawCheck(); return;
     }
     if (id === "dNlAll") {
       S.draw.ties.forEach(function (t) { ["home", "away"].forEach(function (k) { var sd = t[k]; if (!sd.matched && sd.rank === null && !sd.sug) { sd.rank = NONLEAGUE_RANK; sd.manual = true; } }); });
@@ -1395,6 +1425,7 @@ nav.tabs button{padding:10px 11px}
       renderDrawCheck();
     }
   });
+  $("roundsView").addEventListener("change", function (e) { if (e.target.id === "dForce") { S.drawForce = e.target.checked; updateDrawSummary(); } });
   $("roundsView").addEventListener("input", function (e) {
     var t = e.target;
     if (t.classList && t.classList.contains("rankin") && S.draw) {
