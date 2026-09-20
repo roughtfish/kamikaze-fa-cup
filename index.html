@@ -262,6 +262,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 .lbtable tr.me td.sticky{background:color-mix(in srgb,var(--go) 8%,var(--panel))}
 .lbtable td.total,.lbtable th.total{color:var(--ink);font-weight:600}
 .lbtable td.top{color:var(--go);font-weight:600}
+.lbtable small{display:block;color:var(--faint);font-family:var(--body);font-size:11px;font-weight:400;line-height:1.1}
 
 </style>
 </head>
@@ -613,10 +614,10 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       kamikaze_fa_public: { seasons: { demo: {
         config: cfg,
         leaderboard: [
-          { name: "Dave", points: 71.4, correct: 9, bestCall: 30, rounds: { r3: 45.0, r4: 26.4 } },
-          { name: "Demo Manager", points: 34.3, correct: 5, bestCall: 30, rounds: { r3: 33.3, r4: 1.0 } },
-          { name: "Sam", points: 27.1, correct: 7, bestCall: 4.2, rounds: { r3: 12.7, r4: 14.4 } },
-          { name: "Priya", points: 12.5, correct: 5, bestCall: 2.8, rounds: { r3: 7.0, r4: 5.5 } }
+          { name: "Dave", points: 71.4, correct: 9, bestGap: 73, bestGapClub: "Grimsby", rounds: { r3: 45.0, r4: 26.4 } },
+          { name: "Demo Manager", points: 34.3, correct: 5, bestGap: 25, bestGapClub: "Halifax", rounds: { r3: 33.3, r4: 1.0 } },
+          { name: "Sam", points: 27.1, correct: 7, bestGap: 12, bestGapClub: "Leeds", rounds: { r3: 12.7, r4: 14.4 } },
+          { name: "Priya", points: 12.5, correct: 5, bestGap: 0, bestGapClub: "", rounds: { r3: 7.0, r4: 5.5 } }
         ]
       } } }
     };
@@ -1056,12 +1057,12 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       var top = {}; ids.forEach(function (id) { top[id] = Math.max.apply(null, rows.map(function (r) { return (r.rounds && r.rounds[id]) || 0; })); });
       box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Leaderboard</h2>' + (ids.length ? '<span class="hint">Points in each finished round</span>' : "") + '</div><div class="lbwrap">' +
         '<table class="lbtable"><tr><th class="sticky s1">#</th><th class="sticky s2">Manager</th><th class="n total">Total</th>' +
-        ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + '<th class="n">Correct</th><th class="n">Best call</th></tr>' +
+        ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + '<th class="n">Correct</th><th class="n">Biggest gap</th></tr>' +
         rows.map(function (r, i) {
           return '<tr class="' + (r.name === S.who.name ? "me" : "") + '"><td class="pos sticky s1">' + (i + 1) + '</td><td class="sticky s2">' + esc(r.name) + '</td><td class="n total">' + fmt1(r.points || 0) + "</td>" +
             ids.map(function (id) { var v = (r.rounds && r.rounds[id]) || 0; return '<td class="n' + (v > 0 && v === top[id] ? " top" : "") + '">' + (v ? fmt1(v) : "0") + "</td>"; }).join("") +
-            '<td class="n">' + (r.correct || 0) + '</td><td class="n">' + (r.bestCall ? fmt1(r.bestCall) : "-") + "</td></tr>";
-        }).join("") + "</table></div></div>";
+            '<td class="n">' + (r.correct || 0) + '</td><td class="n">' + (r.bestGap ? r.bestGap + "<small>" + esc(r.bestGapClub || "") + "</small>" : "-") + "</td></tr>";
+        }).join("") + '</table></div><p class="hint" style="padding:10px 16px 14px;margin:0">Biggest gap: the most league places between the two clubs in a tie where you backed the lower-placed club and it went through.</p></div>';
     }).catch(function () {
       box.querySelector(".empty").innerHTML = "<b>Couldn't load the table</b>Try again in a moment.";
     });
@@ -1103,7 +1104,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       "<h3>Missed picks</h3><p>If you haven\u2019t called a tie before the round locks, it\u2019s auto-assigned to the <b>higher-ranked team</b>, and it uses up one of that team\u2019s picks like any other call. It scores exactly as if you\u2019d chosen it.</p>" +
       '<ul class="ruleslist"><li>If the higher-ranked team is used up, the other team is picked instead.</li><li>If both teams are used up, the tie scores 0.</li><li>If the two clubs are ranked the same (two non-league sides), the home team is picked.</li></ul>' +
       "<h3>Final tiebreak</h3><p>If managers are level on points after the Final, it\u2019s settled in this order:</p>" +
-      '<ol class="ruleslist"><li>Most correct calls.</li><li>Biggest single payout on a correct call.</li><li>Still tied? The prize is shared. <span class="quip">(Cue the admin: \u201cGoddamit, this is costing me a fortune in shields!\u201d)</span></li></ol>' +
+      '<ol class="ruleslist"><li>Most correct calls.</li><li>Biggest gap: the most league places between the two clubs in a tie where you backed the lower-placed club and it went through.</li><li>Still tied? The prize is shared. <span class="quip">(Cue the admin: \u201cGoddamit, this is costing me a fortune in shields!\u201d)</span></li></ol>' +
       "</div></div>";
   }
 
