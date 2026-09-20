@@ -898,11 +898,23 @@ nav.tabs button{padding:10px 11px}
     return names;
   }
 
+  var NONLEAGUE_RANK = 93;
+  function parseNames(text) {
+    var seen = {}, out = [];
+    text.split(/[\r\n,;]+/).forEach(function (x) {
+      var n = x.trim().replace(/\s+/g, " "); if (!n || n.length > 40) return;
+      var k = clubKey(n); if (!k || seen[k]) return; seen[k] = 1; out.push(n);
+    });
+    return out;
+  }
+  function nonLeagueList() { var r = registry(); return Object.keys(r).filter(function (k) { return r[k].nonLeague; }).map(function (k) { return { key: k, name: r[k].name }; }).sort(function (a, b) { return a.name.localeCompare(b.name); }); }
+
   function renderPositions() {
     if (!S.sid) return needSeason("positionsView");
     var reg = registry(), keys = Object.keys(reg);
-    var counts = DIVISIONS.map(function (d) { return keys.filter(function (k) { return reg[k].rank >= d.base && reg[k].rank < d.base + d.size; }).length; });
-    var list = keys.map(function (k) { return reg[k]; }).sort(function (a, b) { return a.rank - b.rank; });
+    var counts = DIVISIONS.map(function (d) { return keys.filter(function (k) { return !reg[k].nonLeague && reg[k].rank >= d.base && reg[k].rank < d.base + d.size; }).length; });
+    var list = keys.map(function (k) { return reg[k]; }).filter(function (c) { return !c.nonLeague; }).sort(function (a, b) { return a.rank - b.rank; });
+    var nl = nonLeagueList();
     var divOpts = DIVISIONS.map(function (d, i) { return '<option value="' + i + '">' + esc(d.label) + "</option>"; }).join("");
     var auto = DEMO || !!CONFIG.STANDINGS_URL;
     $("positionsView").innerHTML =
@@ -916,6 +928,13 @@ nav.tabs button{padding:10px 11px}
       '<p class="hint" style="margin:0">Do this for each division before entering a round\'s draw. Premier League positions 1 to 20, then the Championship, League One and League Two. Anything below League Two counts as 93rd, so it doesn\'t need a table. Known so far: ' +
       DIVISIONS.map(function (d, i) { return counts[i] + " of " + d.size; }).join(", ") + ".</p>" +
       '<div id="tbOut"></div></div></div>' +
+      '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Non-league clubs</h2><span class="hint">' + nl.length + " saved</span></div>" +
+      '<div class="adminbox"><p class="hint" style="margin:0">Every club outside the top four divisions counts as 93rd, so only the names matter. Save them once and every later draw recognises them.</p>' +
+      '<label><span>Names, one per line or separated by commas</span><textarea id="nlText" spellcheck="false" style="min-height:110px" placeholder="Halifax Town, Gateshead, Boreham Wood&#10;Solihull Moors"></textarea></label>' +
+      '<div class="btnrow"><button type="button" class="btn small" id="nlSave">Save as non-league</button></div><div id="nlOut"></div>' +
+      (nl.length ? '<div style="max-height:200px;overflow:auto"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Saved non-league clubs</th><th class="num"></th></tr>' +
+        nl.map(function (c) { return "<tr><td>" + esc(c.name) + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div>" : "") +
+      "</div></div>" +
       (list.length ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Clubs</h2></div><div style="max-height:320px;overflow:auto;padding:0 16px 12px"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Pos</th><th>Club</th></tr>' +
         list.map(function (c) { return "<tr><td>" + c.rank + "</td><td>" + esc(c.name) + "</td></tr>"; }).join("") + "</table></div></div>" : "");
   }
@@ -1009,9 +1028,36 @@ nav.tabs button{padding:10px 11px}
       note(m[e.code] || (e && e.denied ? errText(e) : "Couldn't load the tables. Check the Worker address and your connection, or paste them below."), "bad");
     }).then(function () { if ($("stLoad")) $("stLoad").disabled = false; });
   }
+  function saveNonLeague() {
+    var names = parseNames($("nlText").value), out = $("nlOut");
+    if (!names.length) { out.innerHTML = '<div class="strip">No names found.</div>'; return; }
+    var updates = {}, added = 0, again = 0, skipped = [];
+    names.forEach(function (n) {
+      var key = clubKey(n), old = registry()[key];
+      if (old && !old.nonLeague) { skipped.push(old.name + " (position " + old.rank + ")"); return; }   // never turn a league club into a non-league one
+      if (old) again++; else added++;
+      updates["clubs/" + key] = { name: n, short: n, rank: NONLEAGUE_RANK, nonLeague: true };
+    });
+    if (!Object.keys(updates).length) { out.innerHTML = '<div class="strip">All of those are already league clubs: ' + esc(skipped.join(", ")) + ". Nothing saved.</div>"; return; }
+    S.busy = true;
+    multi(seasonPath(), updates).then(loadSeason).then(function () {
+      renderPositions();
+      var o = $("nlOut");
+      if (o) o.innerHTML = (skipped.length ? '<div class="strip">Skipped, already league clubs: ' + esc(skipped.join(", ")) + ".</div>" : "") +
+        '<div class="adminsum" style="padding:12px 0"><b>' + added + "</b> added" + (again ? ", " + again + " already saved" : "") + ".</div>";
+      if (S.draw) reresolveDraw();
+      note("Non-league clubs saved.", "ok");
+    }).catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
+  }
   $("positionsView").addEventListener("click", function (e) {
     if (e.target.id === "tbRead") readTable();
     if (e.target.id === "stLoad") loadStandings();
+    if (e.target.id === "nlSave") saveNonLeague();
+    var rm = e.target.getAttribute && e.target.getAttribute("data-rmclub");
+    if (rm) {
+      var u = {}; u["clubs/" + rm] = null;
+      multi(seasonPath(), u).then(loadSeason).then(function () { renderPositions(); note("Removed.", "ok"); }).catch(function (er) { note(errText(er), "bad"); });
+    }
   });
 
   /* ---------------- Rounds tab ---------------- */
@@ -1037,12 +1083,13 @@ nav.tabs button{padding:10px 11px}
   // Suggest a club only when exactly one known club contains every word that was typed, so
   // "Wycombe" finds Wycombe Wanderers but "Sheffield" (two clubs) or "Cambridge City" (a different club) find nothing.
   function tokenSuggest(name) {
-    var want = norm(name).split(" "), found = [];
+    var want = norm(name).split(" "), fwd = [], back = [];
     Object.keys(registry()).forEach(function (k) {
       var have = norm(registry()[k].name).split(" ");
-      if (want.every(function (w) { return have.indexOf(w) !== -1; })) found.push(registry()[k]);
+      if (want.every(function (w) { return have.indexOf(w) !== -1; })) fwd.push(registry()[k]);        // typed "Wycombe", saved "Wycombe Wanderers"
+      else if (have.every(function (h) { return want.indexOf(h) !== -1; })) back.push(registry()[k]);  // typed "Solihull Moors", saved "Solihull"
     });
-    return found.length === 1 ? found[0] : null;
+    return fwd.length === 1 ? fwd[0] : (!fwd.length && back.length === 1 ? back[0] : null);
   }
   function resolveClub(raw) {
     var name = raw.trim(), key = clubKey(name), c = registry()[key];
@@ -1104,11 +1151,24 @@ nav.tabs button{padding:10px 11px}
       '<span class="line"><label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)">Position <input class="rankin" type="number" min="1" max="200" data-i="' + i + '" data-k="' + key + '" value="' + (sd.rank === null ? "" : sd.rank) + '"></label></span>' +
       (buttons ? '<span class="line">' + buttons + "</span>" : "") + "</div>";
   }
+  // Clubs with no match and no likely suggestion: almost always genuine non-league sides.
+  function unmatchedCount() {
+    var n = 0;
+    S.draw.ties.forEach(function (t) { [t.home, t.away].forEach(function (sd) { if (!sd.matched && sd.rank === null && !sd.sug) n++; }); });
+    return n;
+  }
+  function reresolveDraw() {
+    if (!S.draw) return;
+    S.draw.ties.forEach(function (t) { ["home", "away"].forEach(function (k) { if (!t[k].manual) t[k] = resolveClub(t[k].raw); }); });
+    renderDrawCheck();
+  }
   function renderDrawCheck() {
     var box = $("dCheck"); if (!box) return;
     if (!S.draw || S.draw.round !== S.round || !S.draw.ties.length) { box.innerHTML = ""; return; }
     var d = S.draw;
     box.innerHTML = '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Check the ties</h2><span class="hint" id="dHint"></span></div>' +
+      '<div class="adminbox" id="dNlBox" style="padding-bottom:4px"><div class="btnrow"><button type="button" class="btn small secondary" id="dNlAll"></button></div>' +
+      '<p class="hint" style="margin:0">Clubs with no match and no suggestion are set to non-league (93), and remembered when you save the draw. A club with a suggestion is left for you to check, in case it is a typo.</p></div>' +
       d.ties.map(function (t, i) { return '<div class="adminrow">' + sideHTML(t.home, i, "home") + sideHTML(t.away, i, "away") + "</div>"; }).join("") +
       '<div class="adminsum" id="dSum"></div></div>' +
       (d.skipped.length ? '<p class="msg">Skipped ' + d.skipped.length + " line" + (d.skipped.length === 1 ? "" : "s") + " with no \u201cv\u201d in them: " + esc(d.skipped.join("; ")) + "</p>" : "") +
@@ -1123,6 +1183,8 @@ nav.tabs button{padding:10px 11px}
     $("dSum").innerHTML = "<b>" + d.ties.length + "</b> ties read. " + (missing ? "<b>" + missing + "</b> still need a position." : "Every club has a position.") +
       (dups.length ? ' <span style="color:var(--danger)">' + esc(dups.join(", ")) + " appears more than once. A team can only be in one tie a round.</span>" : "");
     $("dSave").disabled = missing > 0 || dups.length > 0;
+    var nl = unmatchedCount(), b = $("dNlAll");
+    if (b) { b.textContent = "Set the " + nl + " unrecognised club" + (nl === 1 ? "" : "s") + " as non-league (93)"; $("dNlBox").hidden = nl === 0; }
   }
   function saveDraw() {
     var d = S.draw, rid = S.round, ties = {};
@@ -1132,9 +1194,17 @@ nav.tabs button{padding:10px 11px}
         away: { key: t.away.key || clubKey(t.away.club), club: t.away.club, short: t.away.short, rank: t.away.rank, crest: t.away.crest }
       };
     });
+    var updates = {}, remembered = 0;
+    updates["ties/" + rid] = ties;
+    d.ties.forEach(function (t) {
+      [t.home, t.away].forEach(function (sd) {
+        var key = sd.key || clubKey(sd.club);
+        if (!sd.matched && sd.rank === NONLEAGUE_RANK && key && !registry()[key]) { updates["clubs/" + key] = { name: sd.club, short: sd.club, rank: NONLEAGUE_RANK, nonLeague: true }; remembered++; }
+      });
+    });
     S.busy = true;
-    db.put(seasonPath() + "/ties/" + rid, ties).then(function () { S.draw = null; return loadSeason(); })
-      .then(function () { renderRounds(); note("Draw saved: " + Object.keys(ties).length + " ties.", "ok"); })
+    multi(seasonPath(), updates).then(function () { S.draw = null; return loadSeason(); })
+      .then(function () { renderAll(); note("Draw saved: " + Object.keys(ties).length + " ties." + (remembered ? " " + remembered + " non-league club" + (remembered === 1 ? "" : "s") + " remembered for next time." : ""), "ok"); })
       .catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
   }
   function refreshRanks() {
@@ -1279,6 +1349,10 @@ nav.tabs button{padding:10px 11px}
     var id = t.id;
     if (id === "dRead") {
       var out = parseDraw($("dText").value); S.draw = { round: S.round, ties: out.ties, skipped: out.skipped }; renderDrawCheck(); return;
+    }
+    if (id === "dNlAll") {
+      S.draw.ties.forEach(function (t) { ["home", "away"].forEach(function (k) { var sd = t[k]; if (!sd.matched && sd.rank === null && !sd.sug) { sd.rank = NONLEAGUE_RANK; sd.manual = true; } }); });
+      renderDrawCheck(); return;
     }
     if (id === "dSave") return saveDraw();
     if (id === "dRefresh") return refreshRanks();
