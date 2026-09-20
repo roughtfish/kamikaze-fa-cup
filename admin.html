@@ -253,6 +253,17 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 .side .team .tn{font-size:clamp(14px,4.3vw,21px)}
 @media (max-width:400px){ .cc{width:24px;height:24px} .side .team{gap:6px} }
 
+/* leaderboard with a column per round: scrolls sideways, rank and name stay put */
+.lbwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.lbtable{min-width:100%}
+.lbtable th,.lbtable td{white-space:nowrap}
+.lbtable th.sticky,.lbtable td.sticky{position:sticky;background:var(--panel);z-index:1}
+.lbtable .s1{left:0;min-width:38px;width:38px}
+.lbtable .s2{left:38px;min-width:104px;box-shadow:1px 0 0 var(--line-soft)}
+.lbtable tr.me td.sticky{background:color-mix(in srgb,var(--go) 8%,var(--panel))}
+.lbtable td.total,.lbtable th.total{color:var(--ink);font-weight:600}
+.lbtable td.top{color:var(--go);font-weight:600}
+
 .notebar{margin:14px 0 0;padding:10px 14px;border-radius:10px;font-size:14px;border:1px solid var(--go-dim);background:rgba(25,226,160,.08);color:var(--go)}
 .notebar.bad{border-color:var(--danger);background:rgba(255,91,126,.08);color:var(--danger)}
 .cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -470,11 +481,12 @@ nav.tabs button{padding:10px 11px}
     // Leaderboard from resolved rounds only. Ties broken by correct calls, then best call.
     leaderboard: function (season) {
       var rows = Object.keys(season.managers || {}).map(function (uid) {
-        var row = { name: season.managers[uid].name, points: 0, correct: 0, bestCall: 0 };
+        var row = { name: season.managers[uid].name, points: 0, correct: 0, bestCall: 0, rounds: {} };
         Object.keys(season.rounds || {}).forEach(function (rid) {
           if (season.rounds[rid].status !== "resolved") return;
           var r = Logic.roundPoints(season, rid, uid);
           row.points += r.pts; row.correct += r.correct; if (r.best > row.bestCall) row.bestCall = r.best;
+          row.rounds[rid] = round2(r.pts);
         });
         row.points = round2(row.points); row.bestCall = round2(row.bestCall);
         return row;
@@ -1441,6 +1453,21 @@ nav.tabs button{padding:10px 11px}
     }
   });
 
+  /* ---------------- leaderboard table (one column per finished round) ---------------- */
+  var LB_LABEL = { r3: "R3", r4: "R4", r5: "R5", qf: "QF", sf: "SF", f: "Final" };
+  function fmt1(x) { return Number(x).toFixed(1); }
+  function lbTableHTML(rows) {
+    var ids = ROUND_DEFS.map(function (d) { return d.id; }).filter(function (id) { return rows.some(function (r) { return r.rounds && r.rounds[id] !== undefined; }); });
+    var top = {}; ids.forEach(function (id) { top[id] = Math.max.apply(null, rows.map(function (r) { return (r.rounds && r.rounds[id]) || 0; })); });
+    return '<div class="lbwrap"><table class="lbtable"><tr><th class="sticky s1">#</th><th class="sticky s2">Manager</th><th class="n total">Total</th>' +
+      ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + '<th class="n">Correct</th><th class="n">Best call</th></tr>' +
+      rows.map(function (r, i) {
+        return '<tr><td class="pos sticky s1">' + (i + 1) + '</td><td class="sticky s2">' + esc(r.name) + '</td><td class="n total">' + fmt1(r.points) + "</td>" +
+          ids.map(function (id) { var v = (r.rounds && r.rounds[id]) || 0; return '<td class="n' + (v > 0 && v === top[id] ? " top" : "") + '">' + (v ? fmt1(v) : "0") + "</td>"; }).join("") +
+          '<td class="n">' + r.correct + '</td><td class="n">' + (r.bestCall ? fmt1(r.bestCall) : "-") + "</td></tr>";
+      }).join("") + "</table></div>";
+  }
+
   /* ---------------- Players tab ---------------- */
   function renderPlayers() {
     if (!S.sid) return needSeason("playersView");
@@ -1456,7 +1483,7 @@ nav.tabs button{padding:10px 11px}
       '<div class="adminbox">' + (mgrs.length ? '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Name</th><th class="num">' + (openId ? esc(rounds()[openId].name) + " picks" : "") + '</th><th class="num"></th></tr>' + rows + "</table>" : '<p class="hint" style="margin:0">Nobody has joined yet. Share the join code and the address of the player page.</p>') +
       '<p class="hint" style="margin:0">Removing a manager frees their name so they can join again. It doesn\'t delete their picks.</p></div></div>' +
       '<div class="panel" style="margin-top:16px"><div class="phead"><h2>The table</h2><span class="hint">Finished rounds only</span></div>' +
-      (lb.length ? '<table class="lbtable"><tr><th>#</th><th>Manager</th><th class="n">Points</th><th class="n">Correct</th><th class="n">Best call</th></tr>' + lb.map(function (r, i) { return '<tr><td class="pos">' + (i + 1) + "</td><td>" + esc(r.name) + '</td><td class="n">' + fmtPts(r.points) + '</td><td class="n">' + r.correct + '</td><td class="n">' + (r.bestCall ? fmtPts(r.bestCall) : "-") + "</td></tr>"; }).join("") + "</table>" : '<div class="empty"><b>Nothing yet</b>Scores appear once a round is finished.</div>') +
+      (lb.length ? lbTableHTML(lb) : '<div class="empty"><b>Nothing yet</b>Scores appear once a round is finished.</div>') +
       '<div class="adminbox"><div class="btnrow"><button type="button" class="btn small secondary" id="pRecalc">Recalculate and publish the table</button></div></div></div>';
   }
   $("playersView").addEventListener("click", function (e) {
