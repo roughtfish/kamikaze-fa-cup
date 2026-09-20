@@ -874,7 +874,7 @@ nav.tabs button{padding:10px 11px}
     { base: 1, size: 20, label: "Premier League (positions 1 to 20)" }, { base: 21, size: 24, label: "Championship (positions 21 to 44)" },
     { base: 45, size: 24, label: "League One (positions 45 to 68)" }, { base: 69, size: 24, label: "League Two (positions 69 to 92)" }
   ];
-  var HEADER_WORDS = { pos: 1, team: 1, club: 1, p: 1, pld: 1, gp: 1, w: 1, d: 1, l: 1, f: 1, a: 1, gf: 1, ga: 1, gd: 1, pts: 1, points: 1, form: 1 };
+  var HEADER_WORDS = { pos: 1, team: 1, club: 1, p: 1, pld: 1, gp: 1, w: 1, d: 1, l: 1, f: 1, a: 1, gf: 1, ga: 1, gd: 1, pts: 1, points: 1, form: 1, overall: 1, home: 1, away: 1 };
 
   var HEADER_LINE = /played|goals? (for|against)|goal difference|drawn|\blost\b|\bpts\b|\bpoints\b|^\s*pos(ition)?\b/i;
   // Pull the club names out of pasted table text, in the order they appear. Ignores header rows
@@ -899,13 +899,34 @@ nav.tabs button{padding:10px 11px}
   }
 
   var NONLEAGUE_RANK = 93;
-  function parseNames(text) {
-    var seen = {}, out = [];
-    text.split(/[\r\n,;]+/).forEach(function (x) {
-      var n = x.trim().replace(/\s+/g, " "); if (!n || n.length > 40) return;
+  // Accepts a plain list (one per line, or separated by commas) or whole pasted tables with stats columns.
+  // Table rows keep only the club name. Two names glued together ("GatesheadHereford") are split and reported.
+  function parseNonLeagueNames(text) {
+    var out = [], notes = [], seen = {};
+    function add(n) {
+      n = n.trim().replace(/\s+/g, " ");
+      if (!n || n.length > 40) return;
       var k = clubKey(n); if (!k || seen[k]) return; seen[k] = 1; out.push(n);
+    }
+    function addMaybeGlued(n) {
+      var parts = n.replace(/([a-z])([A-Z])/g, "$1|$2").split("|");
+      if (parts.length > 1 && parts.every(function (x) { return x.length >= 3; })) { notes.push("\u201c" + n + "\u201d looked like " + parts.length + " names run together, so it was split into " + parts.join(" and ") + "."); parts.forEach(add); }
+      else add(n);
+    }
+    text.split(/\r?\n/).forEach(function (line) {
+      var t = line.trim(); if (!t) return;
+      if (HEADER_LINE.test(t)) return;
+      var toks = t.split(/\s+/);
+      if (toks.every(function (k) { return HEADER_WORDS[k.toLowerCase()]; })) return;
+      if (/\d/.test(t) && toks.some(function (k) { return /^[+\-\u2212]?\d+$/.test(k); }) && toks.length > 4) {      // a table row
+        if (/^\d+[.)]?$/.test(toks[0])) toks.shift();
+        var name = [];
+        for (var i = 0; i < toks.length; i++) { if (/^[+\-\u2212]?\d+$/.test(toks[i])) break; name.push(toks[i]); }
+        if (name.length > 1 && name.length % 2 === 0) { var h = name.length / 2; if (name.slice(0, h).join(" ").toLowerCase() === name.slice(h).join(" ").toLowerCase()) name = name.slice(0, h); }
+        if (name.length) addMaybeGlued(name.join(" "));
+      } else t.split(/[,;]+/).forEach(function (x) { addMaybeGlued(x); });
     });
-    return out;
+    return { names: out, notes: notes };
   }
   function nonLeagueList() { var r = registry(); return Object.keys(r).filter(function (k) { return r[k].nonLeague; }).map(function (k) { return { key: k, name: r[k].name }; }).sort(function (a, b) { return a.name.localeCompare(b.name); }); }
 
@@ -930,7 +951,7 @@ nav.tabs button{padding:10px 11px}
       '<div id="tbOut"></div></div></div>' +
       '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Non-league clubs</h2><span class="hint">' + nl.length + " saved</span></div>" +
       '<div class="adminbox"><p class="hint" style="margin:0">Every club outside the top four divisions counts as 93rd, so only the names matter. Save them once and every later draw recognises them.</p>' +
-      '<label><span>Names, one per line or separated by commas</span><textarea id="nlText" spellcheck="false" style="min-height:110px" placeholder="Halifax Town, Gateshead, Boreham Wood&#10;Solihull Moors"></textarea></label>' +
+      '<label><span>Names, one per line or separated by commas. You can also paste a whole league table.</span><textarea id="nlText" spellcheck="false" style="min-height:110px" placeholder="Halifax Town, Gateshead, Boreham Wood&#10;Solihull Moors"></textarea></label>' +
       '<div class="btnrow"><button type="button" class="btn small" id="nlSave">Save as non-league</button></div><div id="nlOut"></div>' +
       (nl.length ? '<div style="max-height:200px;overflow:auto"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Saved non-league clubs</th><th class="num"></th></tr>' +
         nl.map(function (c) { return "<tr><td>" + esc(c.name) + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div>" : "") +
@@ -1029,12 +1050,12 @@ nav.tabs button{padding:10px 11px}
     }).then(function () { if ($("stLoad")) $("stLoad").disabled = false; });
   }
   function saveNonLeague() {
-    var names = parseNames($("nlText").value), out = $("nlOut");
+    var parsed = parseNonLeagueNames($("nlText").value), names = parsed.names, out = $("nlOut");
     if (!names.length) { out.innerHTML = '<div class="strip">No names found.</div>'; return; }
     var updates = {}, added = 0, again = 0, skipped = [];
     names.forEach(function (n) {
       var key = clubKey(n), old = registry()[key];
-      if (old && !old.nonLeague) { skipped.push(old.name + " (position " + old.rank + ")"); return; }   // never turn a league club into a non-league one
+      if (old && !old.nonLeague && old.rank <= 92) { skipped.push(old.name + " (position " + old.rank + ")"); return; }   // never turn a league club into a non-league one
       if (old) again++; else added++;
       updates["clubs/" + key] = { name: n, short: n, rank: NONLEAGUE_RANK, nonLeague: true };
     });
@@ -1043,7 +1064,8 @@ nav.tabs button{padding:10px 11px}
     multi(seasonPath(), updates).then(loadSeason).then(function () {
       renderPositions();
       var o = $("nlOut");
-      if (o) o.innerHTML = (skipped.length ? '<div class="strip">Skipped, already league clubs: ' + esc(skipped.join(", ")) + ".</div>" : "") +
+      if (o) o.innerHTML = parsed.notes.map(function (n) { return '<div class="strip">' + esc(n) + " Check that's right.</div>"; }).join("") +
+        (skipped.length ? '<div class="strip">Skipped, already league clubs: ' + esc(skipped.join(", ")) + ".</div>" : "") +
         '<div class="adminsum" style="padding:12px 0"><b>' + added + "</b> added" + (again ? ", " + again + " already saved" : "") + ".</div>";
       if (S.draw) reresolveDraw();
       note("Non-league clubs saved.", "ok");
