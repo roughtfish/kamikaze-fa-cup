@@ -835,15 +835,23 @@ nav.tabs button{padding:10px 11px}
   ];
   var HEADER_WORDS = { pos: 1, team: 1, club: 1, p: 1, pld: 1, gp: 1, w: 1, d: 1, l: 1, f: 1, a: 1, gf: 1, ga: 1, gd: 1, pts: 1, points: 1, form: 1 };
 
+  var HEADER_LINE = /played|goals? (for|against)|goal difference|drawn|\blost\b|\bpts\b|\bpoints\b|^\s*pos(ition)?\b/i;
+  // Pull the club names out of pasted table text, in the order they appear. Ignores header rows
+  // (including ones whose words run together) and collapses a name that has been pasted twice.
   function parseTable(text) {
     var names = [];
     text.split(/\r?\n/).forEach(function (line) {
       var t = line.trim(); if (!t) return;
+      if (HEADER_LINE.test(t)) return;
       var toks = t.split(/\s+/);
       if (toks.every(function (k) { return HEADER_WORDS[k.toLowerCase()]; })) return;
       if (/^\d+[.)]?$/.test(toks[0])) toks.shift();
       var name = [];
       for (var i = 0; i < toks.length; i++) { if (/^[+\-\u2212]?\d+$/.test(toks[i])) break; name.push(toks[i]); }
+      if (name.length > 1 && name.length % 2 === 0) {
+        var half = name.length / 2;
+        if (name.slice(0, half).join(" ").toLowerCase() === name.slice(half).join(" ").toLowerCase()) name = name.slice(0, half);
+      }
       if (name.length) names.push(name.join(" "));
     });
     return names;
@@ -872,19 +880,24 @@ nav.tabs button{padding:10px 11px}
   }
 
   // Save a list of {name, short, rank} into the club list and show what changed.
-  function saveEntries(entries, warnings, outId) {
-    var updates = {}, fresh = 0, moved = 0;
+  function saveEntries(entries, warnings, outId, ranges) {
+    var updates = {}, fresh = 0, moved = 0, removed = [];
     entries.forEach(function (en) {
       var key = clubKey(en.name), old = registry()[key];
       if (!old) fresh++; else if (old.rank !== en.rank) moved++;
       updates["clubs/" + key] = { name: en.name, short: en.short, rank: en.rank };
+    });
+    // The table you've just read is the whole division, so anything else still filed in that range is stale.
+    Object.keys(registry()).forEach(function (key) {
+      var inRange = (ranges || []).some(function (r) { return registry()[key].rank >= r.base && registry()[key].rank < r.base + r.size; });
+      if (inRange && !updates["clubs/" + key]) { updates["clubs/" + key] = null; removed.push(registry()[key].name); }
     });
     S.busy = true;
     return multi(seasonPath(), updates).then(function () { return loadSeason(); }).then(function () {
       renderPositions();
       var o = $(outId);
       if (o) o.innerHTML = (warnings || []).map(function (w) { return '<div class="strip">' + esc(w) + "</div>"; }).join("") +
-        '<div class="adminsum" style="padding:12px 0"><b>' + entries.length + "</b> clubs read: <b>" + fresh + "</b> new, <b>" + moved + "</b> moved, " + (entries.length - fresh - moved) + " unchanged. Positions are saved.</div>";
+        '<div class="adminsum" style="padding:12px 0"><b>' + entries.length + "</b> clubs read: <b>" + fresh + "</b> new, <b>" + moved + "</b> moved, " + (entries.length - fresh - moved) + " unchanged." + (removed.length ? " Removed " + removed.length + " old entr" + (removed.length === 1 ? "y" : "ies") + " from this division: " + esc(removed.join(", ")) + "." : "") + " Positions are saved.</div>";
       note("Positions saved.", "ok");
     }).catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
   }
@@ -894,7 +907,8 @@ nav.tabs button{padding:10px 11px}
     if (!names.length) { out.innerHTML = '<div class="strip">No clubs found. Paste the table, or type one club per line.</div>'; return; }
     var entries = names.map(function (raw, i) { return { name: raw, short: SHORT[CANON[norm(raw)] || norm(raw)] || raw, rank: div.base + i }; });
     var warn = names.length !== div.size ? ["Expected " + div.size + " clubs for this division but read " + names.length + ". Check nothing was missed or doubled. Saved anyway."] : [];
-    saveEntries(entries, warn, "tbOut");
+    // Only tidy up the division when the whole table was read. A partial paste never removes anything.
+    saveEntries(entries, warn, "tbOut", names.length === div.size ? [{ base: div.base, size: div.size }] : []);
   }
 
   /* --- Premier League and Championship straight from football-data.org, through the Worker --- */
@@ -929,17 +943,18 @@ nav.tabs button{padding:10px 11px}
     var jobs = [{ code: "PL", div: DIVISIONS[0], label: "Premier League" }, { code: "ELC", div: DIVISIONS[1], label: "Championship" }];
     var btn = $("stLoad"); if (btn) btn.disabled = true;
     Promise.all(jobs.map(function (j) { return getStandings(j.code); })).then(function (results) {
-      var entries = [], warn = [];
+      var entries = [], warn = [], full = [];
       results.forEach(function (data, i) {
         var t = tableOf(data), d = jobs[i].div;
         if (t.length !== d.size) warn.push(jobs[i].label + ": expected " + d.size + " clubs but the table has " + t.length + ". Check it looks right.");
+        else full.push({ base: d.base, size: d.size });
         t.forEach(function (row) {
           var name = row.team.name;
           entries.push({ name: name, short: SHORT[CANON[norm(name)] || norm(name)] || row.team.shortName || name, rank: d.base + row.position - 1 });
         });
       });
       if (!entries.length) throw authError("EMPTY");
-      return saveEntries(entries, warn, "stOut");
+      return saveEntries(entries, warn, "stOut", full);
     }).catch(function (e) {
       var m = { NO_URL: "The standings Worker isn't set up yet. Add its address to STANDINGS_URL at the top of admin.html, or paste the tables below.",
         RATE: "football-data.org is limiting requests. Wait a minute and try again, or paste the tables below.",
