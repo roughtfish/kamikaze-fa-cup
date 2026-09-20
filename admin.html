@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex">
+<title>Kamikaze Football · FA Cup admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  color-scheme: dark;
+  --bg:#080d18; --panel:#101a2c; --panel-2:#16223a; --raised:#1d2c49;
+  --line:#283a5c; --line-soft:#1c2a44;
+  --ink:#eaf1fb; --muted:#8ea0c0; --faint:#5e7095;
+  --go:#19e2a0; --go-dim:#0e7d5c; --warn:#ffc043; --danger:#ff5b7e;
+  --focus:#7fb2ff;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 12px 30px -18px rgba(0,0,0,.8);
+  --disp:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --num:ui-monospace,'SF Mono','Cascadia Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:radial-gradient(1200px 500px at 50% -200px, rgba(25,226,160,.07), transparent 60%), var(--bg);
+  color:var(--ink); font-family:var(--body); font-size:15px; line-height:1.45;
+  -webkit-font-smoothing:antialiased; padding-bottom:48px; min-height:100vh;
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+
+/* Masthead */
+header.top{border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, rgba(16,26,44,.9), rgba(8,13,24,.4))}
+.mast{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.crest{width:34px;height:34px;flex:0 0 auto;filter:drop-shadow(0 0 6px rgba(148,163,184,.35))}
+.crest-wind path{animation:crestDrift 2.4s ease-in-out infinite}
+.crest-wind path:nth-child(2){animation-delay:.15s}
+.crest-wind path:nth-child(3){animation-delay:.3s}
+@keyframes crestDrift{0%,100%{transform:translateX(0);opacity:.5}50%{transform:translateX(3px);opacity:.85}}
+@media (prefers-reduced-motion:reduce){.crest-wind path{animation:none}}
+.title h1{font-family:var(--disp);font-weight:700;letter-spacing:.04em;margin:0;font-size:21px;line-height:1;text-transform:uppercase}
+.title h1 .k{color:var(--go)}
+.title .sub{font-size:11.5px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
+.spacer{flex:1}
+.chip{font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px;
+  padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--go);box-shadow:0 0 8px var(--go)}
+
+main{padding-top:18px}
+.panel{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;box-shadow:var(--shadow)}
+.panel + .panel{margin-top:16px}
+.phead{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.phead h2{font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em;font-size:16px;margin:0}
+.phead .hint{font-size:12.5px;color:var(--muted);margin-left:auto}
+.rulesbody{padding:12px 16px 14px;font-size:14.5px;color:var(--muted);line-height:1.55}
+.rulesbody p{margin:0 0 8px}
+.rulesbody p:last-child{margin:0}
+.rulesbody b{color:var(--ink)}
+.multtag{display:inline-block;font-family:var(--disp);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  font-size:12px;border:1px solid var(--warn);color:var(--warn);background:rgba(255,192,67,.08);border-radius:4px;padding:1px 7px;margin-right:6px}
+.tune select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line-soft)}
+nav.tabs button{background:none;border:0;color:var(--muted);font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;
+  font-size:14px;font-weight:600;padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
+.rulesbody h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:.04em;font-size:16px;margin:22px 0 6px;color:var(--ink)}
+.rulesbody h3:first-child{margin-top:6px}
+.rulesbody .note{font-size:13px;color:var(--faint)}
+.quip{font-style:italic;color:var(--faint)}
+.rulestag{font-family:var(--disp);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--go);
+  border:1px solid var(--go-dim);border-radius:5px;padding:1px 7px;margin-left:8px;vertical-align:middle}
+.rulestable{margin:8px 0;width:auto;max-width:420px;border-collapse:collapse}
+.rulestable th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--faint);text-align:left;font-weight:600;padding:0 16px 4px 0}
+.rulestable td{border-bottom:1px solid var(--line-soft);padding:7px 16px 7px 0;font-size:14px}
+.rulestable td.num,.rulestable th.num{font-family:var(--num);text-align:right;padding:7px 0 7px 22px;color:var(--ink)}
+.rulestable th.num{padding:0 0 4px 22px;font-family:var(--disp);color:var(--faint)}
+.ruleslist{margin:8px 0 4px;padding-left:22px;color:var(--muted);font-size:14.5px;line-height:1.6}
+.ruleslist li{margin-bottom:6px}
+.ruleslist b{color:var(--ink)}
+.adminbox{padding:14px 16px 16px;display:grid;gap:12px}
+.adminbox label{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+.adminbox select,.adminbox textarea,.rankin{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;font:inherit}
+.adminbox select{padding:10px 12px}
+.adminbox textarea{min-height:190px;padding:12px;font-family:var(--num);font-size:13px;line-height:1.55;resize:vertical;width:100%}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.btn.small{flex:0 1 auto;padding:9px 14px;font-size:14px}
+.adminrow{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line-soft)}
+.adminside{padding:10px 14px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.adminside + .adminside{border-left:1px solid var(--line-soft)}
+.adminside .nm{font-family:var(--disp);font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.02em;line-height:1.1;overflow-wrap:anywhere}
+.adminside .raw{font-size:12px;color:var(--faint)}
+.adminside .line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rankin{width:70px;padding:6px 8px;font-family:var(--num);font-size:13px}
+.minibtn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:4px 9px;font-size:12px;cursor:pointer}
+.minibtn:hover{border-color:var(--go-dim);color:var(--go)}
+.adminsum{padding:12px 16px;border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
+.adminsum b{color:var(--ink)}
+.empty{padding:34px 18px;text-align:center;color:var(--muted);font-size:14px}
+.empty b{display:block;font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em;font-size:17px;color:var(--ink);margin-bottom:4px}
+.legend{padding:12px 16px;font-size:12px;color:var(--faint);border-top:1px solid var(--line-soft)}
+
+/* Tally bar */
+.tally{position:sticky;top:0;z-index:10;margin:16px 0 0;padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:rgba(16,26,44,.92);backdrop-filter:blur(8px);
+  border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.tally .lab{font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--muted)}
+.tally .big{font-family:var(--disp);font-weight:700;font-size:24px;line-height:1.05}
+.tally .big span{font-size:14px;font-weight:500;color:var(--muted);letter-spacing:.02em}
+.tally .right{text-align:right}
+.tally .sumnum{font-family:var(--num);font-weight:600;font-size:22px;color:var(--go);font-variant-numeric:tabular-nums}
+
+/* Ties */
+.ties{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:14px}
+.tie{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.tie.done{border-color:var(--go-dim)}
+.sides{display:grid;grid-template-columns:1fr 1fr}
+.side{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;
+  padding:14px 14px 12px;background:transparent;border:0;cursor:pointer;min-height:168px;
+  -webkit-tap-highlight-color:transparent}
+.side + .side{border-left:1px solid var(--line-soft)}
+.side:hover:not([aria-disabled="true"]):not([aria-pressed="true"]){background:var(--panel-2)}
+.side .team{font-family:var(--disp);font-weight:700;font-size:21px;letter-spacing:.02em;text-transform:uppercase;line-height:1.05;padding-right:52px}
+.side .where{font-size:12.5px;color:var(--muted)}
+.side .pts{margin-top:auto;font-family:var(--disp);font-weight:700;font-size:52px;line-height:.95;letter-spacing:-.005em;font-variant-numeric:tabular-nums}
+.side .pts small{font-size:16px;font-weight:600;letter-spacing:.06em;margin-left:4px;text-transform:uppercase;color:var(--muted)}
+.side .chance{font-family:var(--num);font-size:12px;color:var(--muted);margin-top:2px}
+.side .usesrow{display:flex;align-items:center;gap:6px;margin-top:6px;font-family:var(--num);font-size:11.5px;color:var(--faint)}
+.upips{display:inline-flex;gap:3px}
+.upips i{display:block;width:4px;height:14px;border-radius:2px;background:var(--line)}
+.upips i.on{background:var(--muted)}
+.upips i.now{background:var(--warn)}
+.upips i.full{background:var(--danger)}
+.tag{display:inline-block;margin-top:6px;width:fit-content;font-family:var(--disp);font-size:10.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;border-radius:4px;padding:1px 6px;border:1px solid var(--line);color:var(--muted)}
+.tag.long{border-color:var(--go-dim);color:var(--go);background:rgba(25,226,160,.08)}
+.tag.cap{border-color:var(--warn);color:var(--warn);background:rgba(255,192,67,.08)}
+.tag.out{border-color:var(--danger);color:var(--danger);background:rgba(255,91,126,.08)}
+
+.tier-safe .pts{color:var(--ink)}
+.tier-mid .pts{color:var(--warn)}
+.tier-long .pts{color:var(--go);text-shadow:0 0 18px rgba(25,226,160,.35)}
+
+.side[aria-pressed="true"]{background:rgba(25,226,160,.09);box-shadow:inset 0 0 0 2px var(--go)}
+.side[aria-pressed="true"]::after{content:"Picked";position:absolute;top:12px;right:12px;
+  font-family:var(--disp);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--go-dim);color:var(--go);background:rgba(25,226,160,.12);border-radius:4px;padding:1px 6px}
+.side[aria-disabled="true"]{cursor:not-allowed}
+.side.used-up{opacity:.5}
+.side.used-up .team,.side.used-up .pts .num{text-decoration:line-through;text-decoration-thickness:2px}
+.side.locked{cursor:default}
+
+.strip{padding:8px 14px;font-size:13px;color:var(--warn);background:rgba(255,192,67,.07);border-bottom:1px solid var(--line-soft)}
+.strip.stuck{color:var(--danger);background:rgba(255,91,126,.07)}
+
+.why{border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
+.why summary{padding:9px 14px;cursor:pointer;list-style:none;font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:12.5px}
+.why summary::-webkit-details-marker{display:none}
+.why summary::before{content:"+  ";color:var(--go)}
+.why[open] summary::before{content:"\2212  "}
+.why p{margin:0;padding:0 14px 12px}
+
+/* Actions */
+.actions{margin-top:16px;display:flex;gap:10px}
+.btn{flex:1;padding:13px 16px;border-radius:10px;border:1px solid var(--go);background:var(--go);color:#032117;
+  font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:16px;font-weight:700;cursor:pointer}
+.btn.secondary{background:transparent;border-color:var(--line);color:var(--muted)}
+.btn[disabled]{opacity:.35;cursor:not-allowed}
+.msg{min-height:1.4em;margin-top:10px;font-size:13.5px;color:var(--muted)}
+
+/* Tuning */
+.tune{margin-top:22px}
+.tune summary{padding:12px 16px;cursor:pointer;font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:14px;color:var(--muted);list-style:none}
+.tune summary::-webkit-details-marker{display:none}
+.tune .body{padding:4px 16px 16px;display:grid;gap:16px;font-size:14px}
+.tune label{display:grid;gap:4px}
+.tune input[type=range]{width:100%;accent-color:var(--go)}
+.tune .hint{color:var(--faint);font-size:12.5px}
+.tune b{font-family:var(--num);color:var(--ink)}
+.footnote{text-align:center;color:var(--faint);font-size:12px;margin-top:18px}
+
+@media (max-width:480px){
+  .side .pts{font-size:46px}
+  .side .team{font-size:19px}
+}
+
+.rounds{display:flex;gap:6px;overflow-x:auto;padding:14px 0 2px}
+.rounds button{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;
+  padding:6px 14px;font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:13px;font-weight:600;cursor:pointer}
+.rounds button[aria-pressed="true"]{border-color:var(--go);color:var(--go);background:rgba(25,226,160,.08)}
+.deadline{margin-top:14px;padding:10px 16px;border:1px solid var(--line-soft);border-radius:12px;background:var(--panel);font-size:14px;color:var(--muted);display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.deadline b{color:var(--ink)}
+.deadline.locked b{color:var(--warn)}
+.side.won{box-shadow:inset 0 0 0 2px var(--go-dim)}
+.side.lost.picked{box-shadow:inset 0 0 0 2px var(--danger)}
+.side.ro{cursor:default}
+.res{margin-top:6px;font-family:var(--num);font-size:12.5px}
+.res.ok{color:var(--go)} .res.no{color:var(--danger)} .res.wait{color:var(--faint)}
+.autoline{padding:8px 14px;font-size:13px;color:var(--muted);border-top:1px solid var(--line-soft)}
+.autoline b{color:var(--ink)}
+.savestate{font-family:var(--num);font-size:12px;color:var(--faint);min-height:1.2em;text-align:right;margin-top:8px}
+.demobanner{margin:12px 0 0;padding:8px 12px;border:1px dashed var(--warn);border-radius:10px;color:var(--warn);font-size:13px}
+.lbtable{width:100%;border-collapse:collapse}
+.lbtable th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--faint);text-align:left;font-weight:600;padding:10px 12px}
+.lbtable td{padding:10px 12px;border-top:1px solid var(--line-soft);font-size:14.5px}
+.lbtable td.n,.lbtable th.n{text-align:right;font-family:var(--num)}
+.lbtable tr.me td{background:rgba(25,226,160,.07)}
+.lbtable td.pos{font-family:var(--num);color:var(--muted);width:34px}
+.errorbox{margin-top:22px}
+.sides{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.side{min-width:0}
+/* Reserve a row for the "Picked" tag so long club names never run into it */
+.side::before{content:"";display:block;height:18px;flex:0 0 auto}
+.side[aria-pressed="true"]::after{right:auto;left:14px;top:12px}
+.side .team{padding-right:0}
+
+.adminbox input{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;font:inherit;padding:10px 12px;width:100%}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font:inherit;font-size:13.5px;padding:6px 4px}
+.linkbtn:hover{color:var(--go)}
+#signOut{font-size:12.5px}
+
+[hidden]{display:none !important}
+
+.notebar{margin:14px 0 0;padding:10px 14px;border-radius:10px;font-size:14px;border:1px solid var(--go-dim);background:rgba(25,226,160,.08);color:var(--go)}
+.notebar.bad{border-color:var(--danger);background:rgba(255,91,126,.08);color:var(--danger)}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.adminbox input[type=number],.adminbox input[type=datetime-local]{width:100%}
+.rankin:disabled{opacity:.5}
+.hint{font-size:12.5px;color:var(--muted)}
+code{font-family:var(--num);font-size:12.5px;background:var(--panel-2);padding:2px 6px;border-radius:5px;word-break:break-all}
+.adminside .raw,.rulestable .raw{font-size:12px;color:var(--faint)}
+.rulestable td .rankin{width:74px}
+.linkbtn{white-space:nowrap}
+nav.tabs button{padding:10px 11px}
+.rulestable th.pl,.rulestable td.pl{padding-left:18px}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap mast" style="padding-left:16px;padding-right:16px">
+    <svg class="crest" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <g class="crest-wind">
+        <path d="M4 24 C14 20, 22 21, 30 23" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.5"/>
+        <path d="M2 33 C15 30, 25 31, 33 33" stroke="#94a3b8" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.75"/>
+        <path d="M6 42 C17 40, 25 39, 31 38" stroke="#64748b" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+      </g>
+      <g transform="translate(42,32)">
+        <circle r="15" fill="#f8fafc" stroke="#0b1626" stroke-width="2"/>
+        <polygon points="0,-6.5 6,-2 4,5 -4,5 -6,-2" fill="#0b1626"/>
+        <line x1="0" y1="-6.5" x2="0" y2="-13" stroke="#0b1626" stroke-width="1.8"/>
+        <line x1="6" y1="-2" x2="13" y2="-4.5" stroke="#0b1626" stroke-width="1.8"/>
+        <line x1="4" y1="5" x2="8" y2="12" stroke="#0b1626" stroke-width="1.8"/>
+        <line x1="-4" y1="5" x2="-8" y2="12" stroke="#0b1626" stroke-width="1.8"/>
+        <line x1="-6" y1="-2" x2="-13" y2="-4.5" stroke="#0b1626" stroke-width="1.8"/>
+      </g>
+    </svg>
+    <div class="title">
+      <h1><span class="k">Kamikaze</span> Football</h1>
+      <div class="sub">FA Cup · Admin</div>
+    </div>
+    <div class="spacer"></div>
+    <button type="button" class="linkbtn" id="signOut" hidden>Sign out</button>
+  </div>
+  <div class="wrap">
+    <nav class="tabs" id="tabs" hidden>
+      <button data-tab="season" class="on">Season</button>
+      <button data-tab="positions">Positions</button>
+      <button data-tab="rounds">Rounds</button>
+      <button data-tab="players">Players</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banner"></div>
+  <div id="note" class="notebar" role="status" aria-live="polite" hidden></div>
+  <div id="loading" class="panel" style="margin-top:18px"><div class="empty"><b>Loading</b>One moment.</div></div>
+  <div id="errorView" class="panel" style="margin-top:18px" hidden></div>
+  <div id="authView" class="panel" style="margin-top:18px" hidden></div>
+  <div id="seasonView" hidden></div>
+  <div id="positionsView" hidden></div>
+  <div id="roundsView" hidden></div>
+  <div id="playersView" hidden></div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= SETTINGS: edit the API_KEY line ================= */
+  var CONFIG = {
+    DB_URL: "https://kamikaze-fa-cup-default-rtdb.europe-west1.firebasedatabase.app",
+    API_KEY: "AIzaSyDwZ0V9GCG2i28qF0dmt9iMA0aPxpiZHr8"
+  };
+  /* ==================================================================== */
+
+  var ROUND_DEFS = [
+    { id: "r3", name: "Round 3", mult: 1 }, { id: "r4", name: "Round 4", mult: 1 }, { id: "r5", name: "Round 5", mult: 1 },
+    { id: "qf", name: "Quarter-finals", mult: 2 }, { id: "sf", name: "Semi-finals", mult: 2 }, { id: "f", name: "Final", mult: 3 }
+  ];
+  var DEFAULT_CFG = { maxUses: 2, cap: 30, spread: 17 };
+
+  var params = new URLSearchParams(location.search);
+  var DEMO = params.get("demo") === "1";
+  var AUTH = { uid: null, idToken: null, refreshToken: null, exp: 0, email: null };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+  function round2(x) { return Math.round(x * 100) / 100; }
+  function round4(x) { return Math.round(x * 10000) / 10000; }
+  function fmtPts(x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }
+  function fmtWhen(ms) { return new Date(ms).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
+  function ordinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function rankLabel(r) {
+    if (r > 92) return "Non-league";
+    var name = r <= 20 ? "Premier League" : r <= 44 ? "Championship" : r <= 68 ? "League One" : "League Two";
+    var start = r <= 20 ? 0 : r <= 44 ? 20 : r <= 68 ? 44 : 68;
+    return name + ", " + ordinal(r - start);
+  }
+
+  /* =====================================================================
+     LOGIC. Pure functions: no screen, no network. The lock step and the
+     scoring live here so they can be tested on their own.
+     A "season" is the whole kamikaze_fa/seasons/<id> node.
+     ===================================================================== */
+  var Logic = {
+    chance: function (a, b, spread) { return 1 / (1 + Math.exp(-(b - a) / spread)); },
+
+    tieIds: function (ties) { return Object.keys(ties || {}).sort(); },
+    clubOf: function (tie, side) { return tie[side].club || tie[side].short; },
+    validSide: function (pk) { return !!pk && (pk.side === "home" || pk.side === "away"); },
+
+    // Turn a draft tie into a frozen one: chance of going through and points, multiplier included.
+    freezeTie: function (t, cfg, mult) {
+      var ph = Logic.chance(t.home.rank, t.away.rank, cfg.spread), pa = 1 - ph;
+      return {
+        home: { club: t.home.club, short: t.home.short, rank: t.home.rank, p: round4(ph) },
+        away: { club: t.away.club, short: t.away.short, rank: t.away.rank, p: round4(pa) },
+        ptsHome: round4(Math.min(1 / ph, cfg.cap) * mult),
+        ptsAway: round4(Math.min(1 / pa, cfg.cap) * mult)
+      };
+    },
+
+    // How many times this manager has already backed each club in earlier locked or resolved rounds.
+    usedBefore: function (season, uid, exceptRid) {
+      var used = {};
+      Object.keys(season.rounds || {}).forEach(function (rid) {
+        var r = season.rounds[rid];
+        if (rid === exceptRid || (r.status !== "locked" && r.status !== "resolved")) return;
+        var ties = (season.ties || {})[rid] || {}, mine = ((season.picks || {})[rid] || {})[uid] || {};
+        Object.keys(mine).forEach(function (tid) {
+          var tie = ties[tid], pk = mine[tid];
+          if (!tie || !Logic.validSide(pk)) return;
+          var c = Logic.clubOf(tie, pk.side); used[c] = (used[c] || 0) + 1;
+        });
+      });
+      return used;
+    },
+
+    // The higher-ranked team, unless it's used up; then the other; if both are used up, nobody.
+    autoChoice: function (tie, used, max) {
+      var first = tie.home.rank <= tie.away.rank ? "home" : "away", other = first === "home" ? "away" : "home";
+      if ((used[Logic.clubOf(tie, first)] || 0) < max) return first;
+      if ((used[Logic.clubOf(tie, other)] || 0) < max) return other;
+      return null;
+    },
+
+    // The lock step. Returns the writes to make (relative to the season) and a report.
+    planLock: function (season, rid, picksNow) {
+      var cfg = season.config || DEFAULT_CFG, max = cfg.maxUses;
+      var ties = (season.ties || {})[rid] || {}, ids = Logic.tieIds(ties);
+      var updates = {}, report = { filled: 0, overridden: 0, none: 0, byManager: {} };
+      Object.keys(season.managers || {}).forEach(function (uid) {
+        var used = Logic.usedBefore(season, uid, rid), mine = picksNow[uid] || {};
+        var mrep = { filled: 0, overridden: 0, none: 0 };
+        ids.forEach(function (tid) {
+          var tie = ties[tid], pk = mine[tid], rec = null, ch;
+          if (Logic.validSide(pk)) {
+            if ((used[Logic.clubOf(tie, pk.side)] || 0) >= max) {          // over the limit: a bug or a second tab
+              ch = Logic.autoChoice(tie, used, max);
+              rec = { side: ch || "none", auto: true, overridden: true };
+              mrep.overridden++;
+            }
+          } else if (!(pk && pk.side === "none")) {                        // blank: fill it in
+            ch = Logic.autoChoice(tie, used, max);
+            rec = { side: ch || "none", auto: true };
+            if (ch) mrep.filled++; else mrep.none++;
+          }
+          if (rec) updates["picks/" + rid + "/" + uid + "/" + tid] = rec;
+        });
+        report.filled += mrep.filled; report.overridden += mrep.overridden; report.none += mrep.none;
+        report.byManager[uid] = mrep;
+      });
+      return { updates: updates, report: report };
+    },
+
+    // Final picks after the lock step: the existing ones with the planned changes applied.
+    mergedPicks: function (season, rid, picksNow, updates) {
+      var out = JSON.parse(JSON.stringify(picksNow || {}));
+      Object.keys(updates).forEach(function (path) {
+        var p = path.split("/");            // picks / rid / uid / tid
+        out[p[2]] = out[p[2]] || {}; out[p[2]][p[3]] = updates[path];
+      });
+      return out;
+    },
+
+    // Points for one manager in one round (only ties with a winner count).
+    roundPoints: function (season, rid, uid) {
+      var ties = (season.ties || {})[rid] || {}, mine = ((season.picks || {})[rid] || {})[uid] || {}, pts = 0, correct = 0, best = 0;
+      Object.keys(mine).forEach(function (tid) {
+        var tie = ties[tid], pk = mine[tid];
+        if (!tie || !tie.winner || !Logic.validSide(pk) || pk.side !== tie.winner) return;
+        var p = pk.side === "home" ? tie.ptsHome : tie.ptsAway;
+        pts += p; correct++; if (p > best) best = p;
+      });
+      return { pts: pts, correct: correct, best: best };
+    },
+
+    // Leaderboard from resolved rounds only. Ties broken by correct calls, then best call.
+    leaderboard: function (season) {
+      var rows = Object.keys(season.managers || {}).map(function (uid) {
+        var row = { name: season.managers[uid].name, points: 0, correct: 0, bestCall: 0 };
+        Object.keys(season.rounds || {}).forEach(function (rid) {
+          if (season.rounds[rid].status !== "resolved") return;
+          var r = Logic.roundPoints(season, rid, uid);
+          row.points += r.pts; row.correct += r.correct; if (r.best > row.bestCall) row.bestCall = r.best;
+        });
+        row.points = round2(row.points); row.bestCall = round2(row.bestCall);
+        return row;
+      });
+      rows.sort(function (a, b) { return b.points - a.points || b.correct - a.correct || b.bestCall - a.bestCall || a.name.localeCompare(b.name); });
+      return rows;
+    }
+  };
+  window.__admin = { Logic: Logic };
+
+  /* ---------------- club names: matching draws and tables ---------------- */
+  var GROUPS = [
+    ["manchester city", "man city"], ["manchester united", "man united", "man utd"], ["tottenham hotspur", "tottenham", "spurs"],
+    ["wolverhampton wanderers", "wolves"], ["nottingham forest", "nottm forest", "notts forest", "forest"], ["newcastle united", "newcastle"],
+    ["west ham united", "west ham"], ["brighton and hove albion", "brighton", "brighton hove albion"], ["leeds united", "leeds"],
+    ["crystal palace", "palace"], ["aston villa", "villa"], ["sheffield united", "sheff utd", "sheffield utd"],
+    ["sheffield wednesday", "sheff wed", "sheffield weds"], ["west bromwich albion", "west brom"], ["queens park rangers", "qpr"],
+    ["leicester city", "leicester"], ["norwich city", "norwich"], ["stoke city", "stoke"], ["hull city", "hull"], ["swansea city", "swansea"],
+    ["cardiff city", "cardiff"], ["coventry city", "coventry"], ["blackburn rovers", "blackburn"], ["preston north end", "preston"],
+    ["derby county", "derby"], ["ipswich town", "ipswich"], ["birmingham city", "birmingham"], ["plymouth argyle", "plymouth"],
+    ["oxford united", "oxford"], ["portsmouth", "pompey"], ["luton town", "luton"], ["middlesbrough", "boro"], ["bradford city", "bradford"],
+    ["grimsby town", "grimsby"], ["stockport county", "stockport"], ["charlton athletic", "charlton"], ["wigan athletic", "wigan"],
+    ["bolton wanderers", "bolton"], ["halifax town", "halifax"], ["salford city", "salford"], ["tranmere rovers", "tranmere"],
+    ["crewe alexandra", "crewe"], ["swindon town", "swindon"], ["fleetwood town", "fleetwood"], ["colchester united", "colchester"],
+    ["cheltenham town", "cheltenham"], ["oldham athletic", "oldham"], ["rotherham united", "rotherham"], ["northampton town", "northampton"],
+    ["shrewsbury town", "shrewsbury"], ["newport county", "newport"], ["exeter city", "exeter"], ["accrington stanley", "accrington"],
+    ["crawley town", "crawley"], ["york city", "york"], ["gillingham", "gills"], ["bristol rovers", "gas"]
+  ];
+  var SHORT = { "manchester city": "Man City", "manchester united": "Man Utd", "tottenham hotspur": "Spurs", "wolverhampton wanderers": "Wolves",
+    "nottingham forest": "Forest", "newcastle united": "Newcastle", "west ham united": "West Ham", "brighton and hove albion": "Brighton",
+    "leeds united": "Leeds", "crystal palace": "Palace" };
+  var CANON = {};
+  GROUPS.forEach(function (g) { g.forEach(function (n) { CANON[n] = g[0]; }); });
+
+  function norm(str) {
+    var t = String(str).toLowerCase().replace(/&/g, " and ").replace(/['\u2019.]/g, "").replace(/[^a-z0-9]+/g, " ").trim().split(" ");
+    while (t.length > 1 && (t[0] === "fc" || t[0] === "afc")) t.shift();
+    while (t.length > 1 && (t[t.length - 1] === "fc" || t[t.length - 1] === "afc")) t.pop();
+    return t.join(" ");
+  }
+  function clubKey(name) { var n = norm(name); return (CANON[n] || n).replace(/ /g, "-"); }
+  function lev(a, b) {
+    var m = a.length, n = b.length, d = [], i, j;
+    for (i = 0; i <= m; i++) d[i] = [i];
+    for (j = 1; j <= n; j++) d[0][j] = j;
+    for (i = 1; i <= m; i++) for (j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[m][n];
+  }
+
+  /* ---------------- sign-in service and database (REST, or an in-memory demo) ---------------- */
+  function denied() { var e = new Error("denied"); e.denied = true; return e; }
+  function authError(code) { var e = new Error(code); e.code = String(code).split(/[ :]/)[0]; return e; }
+
+  function RestAuth(key) { this.key = key; }
+  RestAuth.prototype.idt = function (method, body) {
+    return fetch("https://identitytoolkit.googleapis.com/v1/accounts:" + method + "?key=" + encodeURIComponent(this.key), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+    }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw authError((j.error && j.error.message) || "UNKNOWN"); return j; }); });
+  };
+  RestAuth.prototype.signIn = function (email, password) { return this.idt("signInWithPassword", { email: email, password: password, returnSecureToken: true }); };
+  RestAuth.prototype.reset = function (email) { return this.idt("sendOobCode", { requestType: "PASSWORD_RESET", email: email }); };
+  RestAuth.prototype.refresh = function (refreshToken) {
+    return fetch("https://securetoken.googleapis.com/v1/token?key=" + encodeURIComponent(this.key), {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(refreshToken)
+    }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw authError((j.error && j.error.message) || "UNKNOWN"); return j; }); });
+  };
+
+  function MockAuth() { this.accounts = { "admin@example.com": { uid: "u-admin", password: "admin1234" }, "sam@example.com": { uid: "u-sam", password: "sam12345" } }; this.resets = []; }
+  MockAuth.prototype.later = function (fn) { return new Promise(function (res, rej) { setTimeout(function () { try { res(fn()); } catch (e) { rej(e); } }, 40); }); };
+  MockAuth.prototype.signIn = function (email, password) {
+    var self = this;
+    return this.later(function () {
+      var a = self.accounts[email.toLowerCase()];
+      if (!a || a.password !== password) throw authError("INVALID_LOGIN_CREDENTIALS");
+      return { localId: a.uid, email: email, idToken: "tok-" + a.uid, refreshToken: "ref-" + a.uid, expiresIn: "3600" };
+    });
+  };
+  MockAuth.prototype.reset = function (email) { var self = this; return this.later(function () { self.resets.push(email.toLowerCase()); return {}; }); };
+  MockAuth.prototype.refresh = function (rt) { var uid = String(rt).replace("ref-", ""); return this.later(function () { return { id_token: "tok-" + uid, refresh_token: rt, user_id: uid, expires_in: "3600" }; }); };
+
+  var Authn = DEMO ? new MockAuth() : new RestAuth(CONFIG.API_KEY);
+
+  function setAuth(j) {
+    AUTH.uid = j.localId; AUTH.idToken = j.idToken; AUTH.refreshToken = j.refreshToken;
+    AUTH.exp = Date.now() + (parseInt(j.expiresIn, 10) || 3600) * 1000; AUTH.email = j.email || AUTH.email; saveSession();
+  }
+  function clearAuth() { AUTH.uid = AUTH.idToken = AUTH.refreshToken = AUTH.email = null; AUTH.exp = 0; }
+  function saveSession() { try { localStorage.setItem("kfa_admin_session", JSON.stringify({ uid: AUTH.uid, refreshToken: AUTH.refreshToken, email: AUTH.email })); } catch (e) { /* storage blocked */ } }
+  function loadSession() { try { return JSON.parse(localStorage.getItem("kfa_admin_session")); } catch (e) { return null; } }
+  function clearSession() { try { localStorage.removeItem("kfa_admin_session"); } catch (e) { /* ignore */ } }
+  function ensureToken() {
+    if (!AUTH.refreshToken) return Promise.resolve(null);
+    if (AUTH.idToken && Date.now() < AUTH.exp - 60000) return Promise.resolve(AUTH.idToken);
+    return Authn.refresh(AUTH.refreshToken).then(function (j) {
+      AUTH.idToken = j.id_token; AUTH.uid = j.user_id || AUTH.uid; AUTH.refreshToken = j.refresh_token || AUTH.refreshToken;
+      AUTH.exp = Date.now() + (parseInt(j.expires_in, 10) || 3600) * 1000; saveSession(); return AUTH.idToken;
+    });
+  }
+
+  function RestDb(base) { this.base = base.replace(/\/$/, ""); }
+  RestDb.prototype.req = function (path, opts) {
+    var s = this;
+    return ensureToken().then(function (tok) {
+      var url = s.base + "/" + path + ".json" + (tok ? "?auth=" + encodeURIComponent(tok) : "");
+      return fetch(url, opts).then(function (r) {
+        if (r.status === 401 || r.status === 403) throw denied();
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      });
+    });
+  };
+  RestDb.prototype.get = function (path) { return this.req(path); };
+  RestDb.prototype.put = function (path, v) { return this.req(path, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(v) }); };
+  RestDb.prototype.remove = function (path) { return this.req(path, { method: "DELETE" }); };
+  RestDb.prototype.patch = function (path, obj) { return this.req(path, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) }); };
+
+  function MockDb(seed) { this.d = seed; }
+  MockDb.prototype.later = function (fn) { return new Promise(function (res, rej) { setTimeout(function () { try { res(fn()); } catch (e) { rej(e); } }, 30); }); };
+  MockDb.prototype.walk = function (path) {
+    if (!path) return this.d;
+    var n = this.d, p = path.split("/");
+    for (var i = 0; i < p.length; i++) { if (n == null || typeof n !== "object") return null; n = n[p[i]]; if (n === undefined) return null; }
+    return n;
+  };
+  MockDb.prototype.isAdmin = function () { return AUTH.uid === "u-admin"; };
+  MockDb.prototype.get = function (path) {
+    var self = this;
+    return this.later(function () {
+      if (/^kamikaze_fa\/seasons/.test(path) && !self.isAdmin()) throw denied();
+      var v = self.walk(path); return v == null ? null : JSON.parse(JSON.stringify(v));
+    });
+  };
+  MockDb.prototype.check = function (path, value) {
+    if (!this.isAdmin()) throw denied();
+    var m = path.match(/^kamikaze_fa\/seasons\/[^/]+\/picks\/[^/]+\/[^/]+\/[^/]+$/);
+    if (m && value !== null) {
+      if (Object.keys(value).some(function (k) { return k !== "side" && k !== "auto" && k !== "overridden"; })) throw denied();
+      if (["home", "away", "none"].indexOf(value.side) === -1) throw denied();
+    }
+  };
+  MockDb.prototype.set = function (path, value) {
+    var parts = path.split("/"), node = this.d;
+    for (var i = 0; i < parts.length - 1; i++) { node[parts[i]] = node[parts[i]] || {}; node = node[parts[i]]; }
+    if (value === null) delete node[parts[parts.length - 1]]; else node[parts[parts.length - 1]] = JSON.parse(JSON.stringify(value));
+  };
+  MockDb.prototype.put = function (path, v) { var self = this; return this.later(function () { self.check(path, v); self.set(path, v); return v; }); };
+  MockDb.prototype.remove = function (path) { var self = this; return this.later(function () { self.check(path, null); self.set(path, null); return null; }); };
+  MockDb.prototype.patch = function (path, obj) {
+    var self = this;
+    return this.later(function () {
+      Object.keys(obj).forEach(function (k) { self.check(path + "/" + k, obj[k]); });
+      Object.keys(obj).forEach(function (k) { self.set(path + "/" + k, obj[k]); });
+      return obj;
+    });
+  };
+
+  var db;   // set in setup, once the demo seed exists
+
+  // Many writes at once. One PATCH if the database accepts it, otherwise one write at a time.
+  function multi(basePath, updates) {
+    var keys = Object.keys(updates);
+    if (!keys.length) return Promise.resolve();
+    return db.patch(basePath, updates).catch(function (e) {
+      if (e && e.denied) throw e;
+      var i = 0;
+      function worker() {
+        if (i >= keys.length) return Promise.resolve();
+        var k = keys[i++], v = updates[k];
+        return (v === null ? db.remove(basePath + "/" + k) : db.put(basePath + "/" + k, v)).then(worker);
+      }
+      return Promise.all([worker(), worker(), worker(), worker()]);
+    });
+  }
+
+  /* ---------------- demo data (only used with ?demo=1) ---------------- */
+  function buildDemoSeed() {
+    if (params.get("empty") === "1") return {};
+    var c = { maxUses: 2, cap: 30, spread: 17 }, now = Date.now(), DAY = 86400000;
+    function T(h, hr, a, ar, mult, w) {
+      var t = Logic.freezeTie({ home: { club: h, short: h, rank: hr }, away: { club: a, short: a, rank: ar } }, c, mult);
+      if (w) t.winner = w; return t;
+    }
+    function P(list) {   // "h,a,-,h" -> picks for t01.. ; "-" leaves a blank
+      var o = {}; list.split(",").forEach(function (s, i) { s = s.trim(); if (s === "h" || s === "a") o["t0" + (i + 1)] = { side: s === "h" ? "home" : "away", auto: false }; });
+      return o;
+    }
+    var clubs = {};
+    [["Manchester City", "Man City", 1], ["Arsenal", "Arsenal", 2], ["Liverpool", "Liverpool", 3], ["Sunderland", "Sunderland", 8], ["Newcastle United", "Newcastle", 9],
+     ["Everton", "Everton", 14], ["Leeds United", "Leeds", 13], ["Aston Villa", "Aston Villa", 6], ["Wrexham", "Wrexham", 30], ["Bradford City", "Bradford", 68],
+     ["Stockport County", "Stockport", 55], ["Grimsby Town", "Grimsby", 74], ["Barnet", "Barnet", 69], ["Halifax Town", "Halifax", 93]].forEach(function (x) {
+      clubs[clubKey(x[0])] = { name: x[0], short: x[1], rank: x[2] };
+    });
+    var mg = { "u-dave": { name: "Dave", code: "DEMO" }, "u-sam": { name: "Sam", code: "DEMO" }, "u-priya": { name: "Priya", code: "DEMO" }, "u-alex": { name: "Alex", code: "DEMO" } };
+    var names = { dave: "u-dave", sam: "u-sam", priya: "u-priya", alex: "u-alex" };
+    var r3 = { "u-priya": P("h,a,h,h"), "u-dave": P("h,h,a,h"), "u-sam": P("a,a,h,a"), "u-alex": P("h,h,h,h") };
+    var r4 = { "u-priya": P("h,h,a"), "u-dave": P("h,a,a"), "u-sam": P("a,a,h"), "u-alex": P("h,a,h") };
+    var r5 = { "u-priya": P("h,a,h,a"), "u-sam": P("-,h,-,a"), "u-alex": P("a,h,a,a") };   // Dave has made none
+    function rd(name, mult, status, extra) { var r = { name: name, mult: mult, status: status, locksAt: now + 30 * DAY }; for (var k in extra) r[k] = extra[k]; return r; }
+    return {
+      kamikaze_fa: { activeSeasonId: "demo", seasons: { demo: {
+        joinCode: "DEMO", config: c, names: names, managers: mg, clubs: clubs,
+        rounds: {
+          r3: rd("Round 3", 1, "resolved", { locksAt: now - 20 * DAY, filled: true }), r4: rd("Round 4", 1, "resolved", { locksAt: now - 10 * DAY, filled: true }),
+          r5: rd("Round 5", 1, "open", { locksAt: now + 2 * DAY }), qf: rd("Quarter-finals", 2, "draft", { locksAt: 0 }),
+          sf: rd("Semi-finals", 2, "draft", { locksAt: 0 }), f: rd("Final", 3, "draft", { locksAt: 0 })
+        },
+        ties: {
+          r3: { t01: T("Man City", 1, "Bradford", 68, 1, "home"), t02: T("Newcastle", 9, "Grimsby", 74, 1, "away"), t03: T("Everton", 14, "Stockport", 55, 1, "home"), t04: T("Sunderland", 8, "Halifax", 93, 1, "home") },
+          r4: { t01: T("Man City", 1, "Grimsby", 74, 1, "home"), t02: T("Everton", 14, "Leeds", 13, 1, "away"), t03: T("Sunderland", 8, "Arsenal", 2, 1, "away") },
+          r5: { t01: T("Man City", 1, "Leeds", 13, 1), t02: T("Arsenal", 2, "Everton", 14, 1), t03: T("Wrexham", 30, "Aston Villa", 6, 1), t04: T("Halifax", 93, "Liverpool", 3, 1) }
+        },
+        picks: { r3: r3, r4: r4, r5: r5 }
+      } } },
+      kamikaze_fa_public: { seasons: { demo: { config: c } } }
+    };
+  }
+
+
+  /* ---------------- state and loading ---------------- */
+  var S = { sid: null, season: {}, tab: "season", round: "r3", draw: null, lockReport: null, busy: false, newSeason: false };
+
+  function seasonPath() { return "kamikaze_fa/seasons/" + S.sid; }
+  function cfg() { return S.season.config || DEFAULT_CFG; }
+  function rounds() { return S.season.rounds || {}; }
+  function managers() { return S.season.managers || {}; }
+  function managerList() { return Object.keys(managers()).map(function (u) { return { uid: u, name: managers()[u].name }; }).sort(function (a, b) { return a.name.localeCompare(b.name); }); }
+  function registry() { return S.season.clubs || {}; }
+  function roundDef(id) { return ROUND_DEFS.filter(function (r) { return r.id === id; })[0]; }
+
+  function loadSeason() {
+    if (!S.sid) { S.season = {}; return Promise.resolve(); }
+    return db.get(seasonPath()).then(function (s) { S.season = s || {}; });
+  }
+
+  function note(text, kind) {
+    var n = $("note");
+    if (!text) { n.hidden = true; return; }
+    n.hidden = false; n.className = "notebar " + (kind || "ok"); n.textContent = text;
+    if (kind !== "bad") { clearTimeout(note.t); note.t = setTimeout(function () { n.hidden = true; }, 6000); }
+  }
+  function fail(title, text) {
+    ["loading", "authView", "seasonView", "positionsView", "roundsView", "playersView"].forEach(function (id) { $(id).hidden = true; });
+    $("tabs").hidden = true;
+    var box = $("errorView"); box.hidden = false;
+    box.innerHTML = '<div class="empty"><b>' + esc(title) + "</b>" + esc(text) + "</div>";
+  }
+  function errText(e) {
+    return e && e.denied ? "The database refused that. Check you're signed in with the admin account." : "Something went wrong. Check your connection and try again.";
+  }
+
+  /* ---------------- sign in ---------------- */
+  var authDraft = "";
+  function showAuth(msg, mode) {
+    mode = mode || "signin";
+    ["loading", "errorView", "seasonView", "positionsView", "roundsView", "playersView"].forEach(function (id) { $(id).hidden = true; });
+    $("tabs").hidden = true; $("signOut").hidden = true; $("authView").hidden = false;
+    var isReset = mode === "reset";
+    $("authView").innerHTML = '<div class="phead"><h2>' + (isReset ? "Reset your password" : "Admin sign in") + '</h2></div><div class="adminbox">' +
+      '<label><span>Email</span><input id="fEmail" type="email" autocomplete="email" inputmode="email" value="' + esc(authDraft) + '"></label>' +
+      (isReset ? "" : '<label><span>Password</span><input id="fPass" type="password" autocomplete="current-password"></label>') +
+      '<div class="btnrow"><button type="button" class="btn small" id="authGo">' + (isReset ? "Send reset link" : "Sign in") + "</button>" +
+      '<button type="button" class="linkbtn" data-mode="' + (isReset ? "signin" : "reset") + '">' + (isReset ? "Back to sign in" : "Forgotten your password?") + "</button></div>" +
+      '<div class="msg" id="authNote" role="status" aria-live="polite">' + esc(msg || "") + "</div></div>";
+  }
+  function authNote(t, ok) { var n = $("authNote"); n.textContent = t; n.style.color = ok ? "var(--go)" : "var(--danger)"; }
+  function submitAuth(isReset) {
+    var email = $("fEmail").value.trim(), pass = $("fPass") ? $("fPass").value : "";
+    authDraft = email;
+    if (!email) return authNote("Enter your email address.");
+    var go = $("authGo"); go.disabled = true;
+    if (isReset) {
+      return Authn.reset(email).catch(function () {}).then(function () { authNote("If there's an account for that address, a reset link is on its way. Check spam too.", true); go.disabled = false; });
+    }
+    if (!pass) { go.disabled = false; return authNote("Enter your password."); }
+    return Authn.signIn(email, pass).then(function (j) { setAuth(j); return enterAdmin(); }).catch(function (e) {
+      var m = { INVALID_LOGIN_CREDENTIALS: "That email and password don't match.", INVALID_PASSWORD: "That email and password don't match.", EMAIL_NOT_FOUND: "That email and password don't match.", TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again." };
+      authNote(m[e.code] || "Something went wrong. Check your connection and try again.");
+    }).then(function () { if ($("authGo")) $("authGo").disabled = false; });
+  }
+  $("authView").addEventListener("click", function (e) {
+    var m = e.target.closest("[data-mode]");
+    if (m) { authDraft = ($("fEmail") || {}).value || authDraft; showAuth("", m.getAttribute("data-mode")); return; }
+    if (e.target.id === "authGo") submitAuth(!$("fPass"));
+  });
+  $("authView").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); submitAuth(!$("fPass")); } });
+  $("errorView").addEventListener("click", function (e) { if (e.target.id === "switchAcct") { clearAuth(); clearSession(); showAuth(); } });
+  $("signOut").addEventListener("click", function () { clearAuth(); clearSession(); S.season = {}; showAuth("You've been signed out."); });
+
+  // Reading any season id is admin-only in the rules, so this doubles as an "are you the admin?" check,
+  // even before a season exists.
+  function enterAdmin() {
+    return db.get("kamikaze_fa/seasons/_probe").then(loadSeason).then(function () {
+      $("loading").hidden = true; $("authView").hidden = true; $("errorView").hidden = true;
+      $("tabs").hidden = false; $("signOut").hidden = false;
+      S.tab = S.sid ? (S.tab || "season") : "season";
+      if (S.sid && !rounds()[S.round]) S.round = Object.keys(rounds())[0] || "r3";
+      renderAll(); showTab(S.tab);
+    }).catch(function (e) {
+      if (e && e.denied) {
+        clearSession();
+        fail("This account isn't the admin", "You're signed in as " + (AUTH.email || "") + ", user ID " + AUTH.uid + ". The database rules only let the account whose ID is written in them as ADMIN_UID in. If that should be you, check the ID in the rules matches this one exactly.");
+        $("errorView").insertAdjacentHTML("beforeend", '<div class="adminbox"><div class="btnrow"><button type="button" class="btn small" id="switchAcct">Sign in with a different account</button></div></div>');
+        return;
+      }
+      fail("Couldn't load", "Check your connection and reload the page.");
+    });
+  }
+
+  function boot() {
+    if (!DEMO && CONFIG.API_KEY.indexOf("YOUR-WEB-API-KEY") !== -1) {
+      return fail("One setting left", "Add your Firebase Web API key to the API_KEY line at the top of the script. Add ?demo=1 to the address to see the console on demo data meanwhile.");
+    }
+    db.get("kamikaze_fa/activeSeasonId").then(function (sid) {
+      S.sid = sid || null;
+      var sess = loadSession();
+      if (!sess || !sess.refreshToken) return showAuth();
+      AUTH.uid = sess.uid; AUTH.refreshToken = sess.refreshToken; AUTH.email = sess.email;
+      return ensureToken().then(enterAdmin).catch(function () { clearAuth(); clearSession(); showAuth("Please sign in again."); });
+    }).catch(function () { fail("Couldn't load", "Check your connection and reload the page."); });
+  }
+
+  /* ---------------- tabs ---------------- */
+  function showTab(name) {
+    S.tab = name;
+    ["season", "positions", "rounds", "players"].forEach(function (v) { $(v + "View").hidden = v !== name; });
+    Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === name); });
+  }
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    showTab(b.getAttribute("data-tab")); window.scrollTo(0, 0);
+  });
+  function renderAll() { renderSeason(); renderPositions(); renderRounds(); renderPlayers(); }
+
+  function needSeason(view) {
+    $(view).innerHTML = '<div class="panel" style="margin-top:18px"><div class="empty"><b>Create the season first</b>Use the Season tab to set up the game.</div></div>';
+  }
+
+  /* ---------------- Season tab ---------------- */
+  var statusLabel = { draft: "Draft", open: "Open", locked: "Locked", resolved: "Finished" };
+
+  function renderSeason() {
+    var fresh = !S.sid || S.newSeason, has = !fresh, c = fresh ? DEFAULT_CFG : cfg();
+    var mrows = ROUND_DEFS.map(function (d) {
+      var r = fresh ? null : rounds()[d.id], mult = r ? r.mult : d.mult, editable = !r || r.status === "draft";
+      return "<tr><td>" + esc(d.name) + '</td><td class="num"><input class="rankin" data-mult="' + d.id + '" type="number" min="1" max="10" step="0.5" value="' + mult + '"' + (editable ? "" : " disabled") + "></td>" +
+        "<td class=\"pl\">" + (r ? '<span class="tag ' + (r.status === "open" ? "long" : r.status === "draft" ? "" : "cap") + '">' + statusLabel[r.status] + "</span>" : '<span class="tag">Not created</span>') + "</td></tr>";
+    }).join("");
+    $("seasonView").innerHTML =
+      '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Season</h2><span class="hint">' + (has ? "Live season: " + esc(S.sid) : S.newSeason ? "New season" : "No season yet") + "</span></div>" +
+      '<div class="adminbox">' +
+      '<label><span>Season ID (letters and numbers, no spaces)</span><input id="sId" maxlength="20" value="' + esc(has ? S.sid : "fa2026") + '"' + (has ? " disabled" : "") + "></label>" +
+      '<label><span>Join code players type to join (capital letters and numbers)</span><input id="sCode" maxlength="12" style="text-transform:uppercase;letter-spacing:.2em" value="' + esc(fresh ? "" : (S.season.joinCode || "")) + '"></label>' +
+      '<div class="cols3"><label><span>Uses per team</span><input id="sMax" type="number" min="1" max="5" value="' + c.maxUses + '"></label>' +
+      '<label><span>Points cap</span><input id="sCap" type="number" min="5" max="100" value="' + c.cap + '"></label>' +
+      '<label><span>Spread</span><input id="sSpread" type="number" min="5" max="40" value="' + c.spread + '"></label></div>' +
+      '<p class="hint" style="margin:0">Uses per team, the cap and the spread are the numbers on the Rules tab. Change them before the first round opens. After that they change how later rounds are scored, so leave them.</p>' +
+      '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Round</th><th class="num">Multiplier</th><th class="pl">Status</th></tr>' + mrows + "</table>" +
+      '<div class="btnrow"><button type="button" class="btn small" id="sSave">' + (has ? "Save changes" : "Create the season") + "</button>" +
+      (has ? '<button type="button" class="btn small secondary" id="sNew">Start a new season</button>' : (S.sid ? '<button type="button" class="btn small secondary" id="sCancelNew">Cancel</button>' : "")) + "</div>" +
+      "</div></div>" +
+      (has ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Your details</h2></div><div class="rulesbody"><p>Signed in as <b>' + esc(AUTH.email || "") + "</b>.<br>User ID: <code>" + esc(AUTH.uid || "") + "</code></p></div></div>" : "");
+  }
+
+  function saveSeason() {
+    var id = ($("sId").value || "").trim(), code = ($("sCode").value || "").trim().toUpperCase();
+    var c = { maxUses: parseInt($("sMax").value, 10), cap: parseFloat($("sCap").value), spread: parseFloat($("sSpread").value) };
+    if (!/^[A-Za-z0-9]{2,20}$/.test(id)) return note("The season ID needs 2 to 20 letters or numbers.", "bad");
+    if (!/^[A-Z0-9]{3,12}$/.test(code)) return note("The join code needs 3 to 12 capital letters or numbers.", "bad");
+    if (!(c.maxUses >= 1 && c.cap >= 5 && c.spread >= 5)) return note("Check the numbers: uses at least 1, cap at least 5, spread at least 5.", "bad");
+    var isNew = !S.sid || S.newSeason, base = "kamikaze_fa/seasons/" + id, updates = { joinCode: code, config: c }, pub = { maxUses: c.maxUses, cap: c.cap, spread: c.spread };
+    ROUND_DEFS.forEach(function (d) {
+      var existing = isNew ? null : ((S.season.rounds || {})[d.id]);
+      var input = document.querySelector('[data-mult="' + d.id + '"]'), mult = input ? parseFloat(input.value) || d.mult : d.mult;
+      if (!existing) updates["rounds/" + d.id] = { name: d.name, mult: mult, status: "draft", locksAt: 0 };
+      else if (existing.status === "draft") updates["rounds/" + d.id + "/mult"] = mult;
+    });
+    if (isNew && S.sid && !confirm("Make " + id + " the live season? Players will see it instead of " + S.sid + ", and " + S.sid + " will stop being shown to them.")) return;
+    S.busy = true;
+    (isNew ? db.get(base) : Promise.resolve(null)).then(function (existingSeason) {
+      if (existingSeason) throw authError("SEASON_EXISTS");
+      return multi(base, updates);
+    }).then(function () { return db.put("kamikaze_fa_public/seasons/" + id + "/config", pub); })
+      .then(function () { return isNew ? db.put("kamikaze_fa/activeSeasonId", id) : null; })
+      .then(function () { S.sid = id; S.newSeason = false; S.round = "r3"; S.draw = null; return loadSeason(); })
+      .then(function () { renderAll(); note(isNew ? "Season created and set live. Players can join with the code " + code + "." : "Changes saved.", "ok"); })
+      .catch(function (e) { note(e && e.code === "SEASON_EXISTS" ? "A season with that ID already exists. Pick a different ID." : errText(e), "bad"); }).then(function () { S.busy = false; });
+  }
+  $("seasonView").addEventListener("click", function (e) {
+    if (e.target.id === "sSave") saveSeason();
+    if (e.target.id === "sNew") { S.newSeason = true; renderSeason(); }
+    if (e.target.id === "sCancelNew") { S.newSeason = false; renderSeason(); }
+  });
+
+  /* ---------------- Positions tab ---------------- */
+  var DIVISIONS = [
+    { base: 1, size: 20, label: "Premier League (positions 1 to 20)" }, { base: 21, size: 24, label: "Championship (positions 21 to 44)" },
+    { base: 45, size: 24, label: "League One (positions 45 to 68)" }, { base: 69, size: 24, label: "League Two (positions 69 to 92)" }
+  ];
+  var HEADER_WORDS = { pos: 1, team: 1, club: 1, p: 1, pld: 1, gp: 1, w: 1, d: 1, l: 1, f: 1, a: 1, gf: 1, ga: 1, gd: 1, pts: 1, points: 1, form: 1 };
+
+  function parseTable(text) {
+    var names = [];
+    text.split(/\r?\n/).forEach(function (line) {
+      var t = line.trim(); if (!t) return;
+      var toks = t.split(/\s+/);
+      if (toks.every(function (k) { return HEADER_WORDS[k.toLowerCase()]; })) return;
+      if (/^\d+[.)]?$/.test(toks[0])) toks.shift();
+      var name = [];
+      for (var i = 0; i < toks.length; i++) { if (/^[+\-\u2212]?\d+$/.test(toks[i])) break; name.push(toks[i]); }
+      if (name.length) names.push(name.join(" "));
+    });
+    return names;
+  }
+
+  function renderPositions() {
+    if (!S.sid) return needSeason("positionsView");
+    var reg = registry(), keys = Object.keys(reg);
+    var counts = DIVISIONS.map(function (d) { return keys.filter(function (k) { return reg[k].rank >= d.base && reg[k].rank < d.base + d.size; }).length; });
+    var list = keys.map(function (k) { return reg[k]; }).sort(function (a, b) { return a.rank - b.rank; });
+    var divOpts = DIVISIONS.map(function (d, i) { return '<option value="' + i + '">' + esc(d.label) + "</option>"; }).join("");
+    $("positionsView").innerHTML =
+      '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Update positions</h2><span class="hint">' + keys.length + " clubs known</span></div>" +
+      '<div class="adminbox"><label><span>Division</span><select id="tbDiv">' + divOpts + "</select></label>" +
+      '<label><span>Paste the table, or type the clubs in order (one per line)</span><textarea id="tbText" spellcheck="false" placeholder="1 Barnet 6 3 3 0 14 9 5 12&#10;2 Bristol Rovers 6 4 0 2 12 8 4 12&#10;..."></textarea></label>' +
+      '<div class="btnrow"><button type="button" class="btn small" id="tbRead">Read the table</button></div>' +
+      '<p class="hint" style="margin:0">Do this for each division before entering a round\'s draw. Premier League positions 1 to 20, then the Championship, League One and League Two. Anything below League Two counts as 93rd, so it doesn\'t need a table. Known so far: ' +
+      DIVISIONS.map(function (d, i) { return counts[i] + " of " + d.size; }).join(", ") + ".</p>" +
+      '<div id="tbOut"></div></div></div>' +
+      (list.length ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Clubs</h2></div><div style="max-height:320px;overflow:auto;padding:0 16px 12px"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Pos</th><th>Club</th></tr>' +
+        list.map(function (c) { return "<tr><td>" + c.rank + "</td><td>" + esc(c.name) + "</td></tr>"; }).join("") + "</table></div></div>" : "");
+  }
+
+  function readTable() {
+    var div = DIVISIONS[parseInt($("tbDiv").value, 10)], names = parseTable($("tbText").value), out = $("tbOut");
+    if (!names.length) { out.innerHTML = '<div class="strip">No clubs found. Paste the table, or type one club per line.</div>'; return; }
+    var updates = {}, fresh = 0, moved = 0;
+    names.forEach(function (raw, i) {
+      var key = clubKey(raw), rank = div.base + i, old = registry()[key];
+      var display = SHORT[CANON[norm(raw)] || norm(raw)] || raw;
+      if (!old) fresh++; else if (old.rank !== rank) moved++;
+      updates["clubs/" + key] = { name: raw, short: display, rank: rank };
+    });
+    var warn = names.length !== div.size ? '<div class="strip">Expected ' + div.size + " clubs for this division but read " + names.length + ". Check nothing was missed or doubled. Saved anyway.</div>" : "";
+    S.busy = true;
+    multi(seasonPath(), updates).then(function () { return loadSeason(); }).then(function () {
+      renderPositions();
+      var o = $("tbOut");
+      if (o) o.innerHTML = warn + '<div class="adminsum" style="padding:12px 0"><b>' + names.length + "</b> clubs read: <b>" + fresh + "</b> new, <b>" + moved + "</b> moved, " + (names.length - fresh - moved) + " unchanged. Positions are saved.</div>";
+      note("Positions saved.", "ok");
+    }).catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
+  }
+  $("positionsView").addEventListener("click", function (e) { if (e.target.id === "tbRead") readTable(); });
+
+  /* ---------------- Rounds tab ---------------- */
+  function tiesOf(rid) { return (S.season.ties || {})[rid] || {}; }
+  function picksOf(rid) { return (S.season.picks || {})[rid] || {}; }
+  function padId(i) { return "t" + (i < 9 ? "0" : "") + (i + 1); }
+
+  function renderRounds() {
+    if (!S.sid) return needSeason("roundsView");
+    var pills = ROUND_DEFS.map(function (d) {
+      var r = rounds()[d.id];
+      return '<button type="button" data-rid="' + d.id + '" aria-pressed="' + (S.round === d.id) + '">' + esc(d.name) + (r ? " · " + statusLabel[r.status] : "") + "</button>";
+    }).join("");
+    var r = rounds()[S.round], body;
+    if (!r) body = '<div class="panel" style="margin-top:14px"><div class="empty"><b>Round not created</b>Save the season again on the Season tab to create the rounds.</div></div>';
+    else if (r.status === "draft") body = draftHTML(S.round, r);
+    else if (r.status === "open") body = openHTML(S.round, r);
+    else body = resultsHTML(S.round, r);
+    $("roundsView").innerHTML = '<div class="rounds" id="roundPills" role="group" aria-label="Rounds">' + pills + "</div>" + body;
+  }
+
+  /* --- draft: enter the draw, open the round --- */
+  function resolveClub(raw) {
+    var name = raw.trim(), key = clubKey(name), c = registry()[key];
+    if (c) return { raw: name, matched: true, club: c.name, short: c.short || c.name, rank: c.rank };
+    var n = CANON[norm(name)] || norm(name), best = null, bd = 99;
+    Object.keys(registry()).forEach(function (k) {
+      var d = lev(n, k.replace(/-/g, " ")); if (d < bd) { bd = d; best = registry()[k]; }
+    });
+    return { raw: name, matched: false, club: name, short: name, rank: null, sug: bd <= 3 ? best : null };
+  }
+  function parseDraw(text) {
+    var ties = [], skipped = [];
+    text.split(/\r?\n/).forEach(function (line) {
+      var t = line.trim(); if (!t) return;
+      t = t.replace(/^\d+\s*[.)\-:]\s*/, "").replace(/\s+\d{1,2}[:.]\d{2}\s*$/, "");
+      var parts = t.split(/\s+(?:v|vs|vs\.)\s+/i);
+      if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) { skipped.push(line.trim()); return; }
+      ties.push({ home: resolveClub(parts[0]), away: resolveClub(parts[1]) });
+    });
+    return { ties: ties, skipped: skipped };
+  }
+  function rankOk(sd) { return typeof sd.rank === "number" && sd.rank >= 1 && sd.rank <= 200; }
+  function drawDuplicates(ties) {
+    var seen = {}, dups = [];
+    ties.forEach(function (t) { [t.home, t.away].forEach(function (sd) { var k = clubKey(sd.club); if (seen[k]) dups.push(sd.club); seen[k] = 1; }); });
+    return dups;
+  }
+
+  function draftHTML(rid, r) {
+    var saved = tiesOf(rid), ids = Logic.tieIds(saved), c = cfg();
+    var savedHTML = ids.length
+      ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Saved draw</h2><span class="hint">' + ids.length + ' ties</span></div><div style="max-height:260px;overflow:auto"><table class="rulestable" style="max-width:none;width:100%;margin:0"><tr><th style="padding-left:16px">Home</th><th>Away</th></tr>' +
+        ids.map(function (t) { var x = saved[t]; return '<tr><td style="padding-left:16px">' + esc(x.home.short) + " <span class=\"raw\">" + rankLabel(x.home.rank) + "</span></td><td>" + esc(x.away.short) + ' <span class="raw">' + rankLabel(x.away.rank) + "</span></td></tr>"; }).join("") +
+        '</table></div><div class="adminbox"><div class="btnrow"><button type="button" class="btn small secondary" id="dRefresh">Refresh positions from the tables</button><button type="button" class="btn small secondary" id="dClear">Clear the draw</button></div></div></div>' : "";
+    var when = ids.length ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Open the round</h2><span class="hint">' + esc(r.name) + " · ×" + r.mult + "</span></div>" +
+      '<div class="adminbox"><label><span>Picks lock at</span><input id="oWhen" type="datetime-local"></label>' +
+      '<p class="hint" style="margin:0">Opening freezes each tie\'s chance and points using spread ' + c.spread + ", cap " + c.cap + " and the ×" + r.mult + " multiplier. Players can then see the ties and make picks.</p>" +
+      '<div class="btnrow"><button type="button" class="btn small" id="oGo">Open ' + esc(r.name) + "</button></div></div></div>" : "";
+    return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>Enter the draw</h2><span class="hint">' + esc(r.name) + "</span></div>" +
+      '<div class="adminbox"><label><span>Paste the draw, one tie per line (Home v Away)</span>' +
+      '<textarea id="dText" spellcheck="false" placeholder="Manchester City v Bradford City&#10;Newcastle United v Grimsby Town&#10;..."></textarea></label>' +
+      '<div class="btnrow"><button type="button" class="btn small" id="dRead">Read the draw</button></div>' +
+      (ids.length ? '<p class="hint" style="margin:0">A draw is already saved for this round. Reading a new one replaces it when you save.</p>' : "") +
+      '</div></div><div id="dCheck"></div>' + savedHTML + when;
+  }
+
+  function sideHTML(sd, i, key) {
+    var status = sd.matched ? '<span class="tag long">Recognised</span>' : (sd.rank !== null ? '<span class="tag cap">Set by you</span>' : '<span class="tag out">Not recognised</span>');
+    var buttons = "";
+    if (!sd.matched) {
+      if (sd.sug) buttons += '<button type="button" class="minibtn" data-act="use" data-i="' + i + '" data-k="' + key + '">Use ' + esc(sd.sug.name) + "</button> ";
+      buttons += '<button type="button" class="minibtn" data-act="nl" data-i="' + i + '" data-k="' + key + '">Non-league (93)</button>';
+    }
+    return '<div class="adminside"><span class="nm">' + esc(sd.matched ? sd.short : sd.club) + "</span>" +
+      (sd.matched && sd.raw !== sd.short ? '<span class="raw">typed as \u201c' + esc(sd.raw) + "\u201d</span>" : "") +
+      '<span class="line">' + status + "</span>" +
+      '<span class="line"><label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)">Position <input class="rankin" type="number" min="1" max="200" data-i="' + i + '" data-k="' + key + '" value="' + (sd.rank === null ? "" : sd.rank) + '"></label></span>' +
+      (buttons ? '<span class="line">' + buttons + "</span>" : "") + "</div>";
+  }
+  function renderDrawCheck() {
+    var box = $("dCheck"); if (!box) return;
+    if (!S.draw || S.draw.round !== S.round || !S.draw.ties.length) { box.innerHTML = ""; return; }
+    var d = S.draw;
+    box.innerHTML = '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Check the ties</h2><span class="hint" id="dHint"></span></div>' +
+      d.ties.map(function (t, i) { return '<div class="adminrow">' + sideHTML(t.home, i, "home") + sideHTML(t.away, i, "away") + "</div>"; }).join("") +
+      '<div class="adminsum" id="dSum"></div></div>' +
+      (d.skipped.length ? '<p class="msg">Skipped ' + d.skipped.length + " line" + (d.skipped.length === 1 ? "" : "s") + " with no \u201cv\u201d in them: " + esc(d.skipped.join("; ")) + "</p>" : "") +
+      '<div class="actions"><button type="button" class="btn" id="dSave" disabled>Save the draw</button></div>';
+    updateDrawSummary();
+  }
+  function updateDrawSummary() {
+    var d = S.draw; if (!d || !$("dSum")) return;
+    var missing = 0; d.ties.forEach(function (t) { [t.home, t.away].forEach(function (sd) { if (!rankOk(sd)) missing++; }); });
+    var dups = drawDuplicates(d.ties);
+    $("dHint").textContent = d.ties.length + " tie" + (d.ties.length === 1 ? "" : "s");
+    $("dSum").innerHTML = "<b>" + d.ties.length + "</b> ties read. " + (missing ? "<b>" + missing + "</b> still need a position." : "Every club has a position.") +
+      (dups.length ? ' <span style="color:var(--danger)">' + esc(dups.join(", ")) + " appears more than once. A team can only be in one tie a round.</span>" : "");
+    $("dSave").disabled = missing > 0 || dups.length > 0;
+  }
+  function saveDraw() {
+    var d = S.draw, rid = S.round, ties = {};
+    d.ties.forEach(function (t, i) {
+      ties[padId(i)] = { home: { club: t.home.club, short: t.home.short, rank: t.home.rank }, away: { club: t.away.club, short: t.away.short, rank: t.away.rank } };
+    });
+    S.busy = true;
+    db.put(seasonPath() + "/ties/" + rid, ties).then(function () { S.draw = null; return loadSeason(); })
+      .then(function () { renderRounds(); note("Draw saved: " + Object.keys(ties).length + " ties.", "ok"); })
+      .catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
+  }
+  function refreshRanks() {
+    var rid = S.round, ties = tiesOf(rid), updates = {}, n = 0;
+    Logic.tieIds(ties).forEach(function (tid) {
+      ["home", "away"].forEach(function (k) {
+        var c = registry()[clubKey(ties[tid][k].club)];
+        if (c && c.rank !== ties[tid][k].rank) { updates["ties/" + rid + "/" + tid + "/" + k + "/rank"] = c.rank; n++; }
+      });
+    });
+    if (!n) return note("Every position is already up to date.", "ok");
+    multi(seasonPath(), updates).then(loadSeason).then(function () { renderRounds(); note(n + " position" + (n === 1 ? "" : "s") + " updated.", "ok"); })
+      .catch(function (e) { note(errText(e), "bad"); });
+  }
+  function clearDraw() {
+    if (!confirm("Clear the saved draw for this round?")) return;
+    db.remove(seasonPath() + "/ties/" + S.round).then(loadSeason).then(function () { renderRounds(); note("Draw cleared.", "ok"); }).catch(function (e) { note(errText(e), "bad"); });
+  }
+
+  function openRound() {
+    var rid = S.round, r = rounds()[rid], ties = tiesOf(rid), ids = Logic.tieIds(ties), when = $("oWhen").value;
+    if (!ids.length) return note("Save a draw first.", "bad");
+    if (!when) return note("Choose when picks lock.", "bad");
+    var locksAt = new Date(when).getTime();
+    if (!(locksAt > Date.now())) return note("The lock time needs to be in the future.", "bad");
+    var missing = ids.some(function (t) { return !rankOk(ties[t].home) || !rankOk(ties[t].away); });
+    if (missing) return note("Some clubs have no position. Re-enter the draw.", "bad");
+    if (!confirm("Open " + r.name + " with " + ids.length + " ties, locking " + fmtWhen(locksAt) + "? Players will be able to see the ties and pick.")) return;
+    var c = cfg(), updates = {};
+    ids.forEach(function (t) { updates["ties/" + rid + "/" + t] = Logic.freezeTie(ties[t], c, r.mult); });
+    updates["rounds/" + rid + "/locksAt"] = locksAt;
+    updates["rounds/" + rid + "/status"] = "open";
+    S.busy = true;
+    multi(seasonPath(), updates).then(loadSeason).then(function () { renderAll(); note(r.name + " is open. Picks lock " + fmtWhen(locksAt) + ".", "ok"); })
+      .catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
+  }
+
+  /* --- open: progress, extend, lock --- */
+  function openHTML(rid, r) {
+    var ties = tiesOf(rid), ids = Logic.tieIds(ties), picks = picksOf(rid), mgrs = managerList();
+    var rows = mgrs.map(function (m) {
+      var mine = picks[m.uid] || {}, n = ids.filter(function (t) { return Logic.validSide(mine[t]); }).length;
+      return "<tr><td>" + esc(m.name) + '</td><td class="num">' + n + " of " + ids.length + '</td><td class="num">' + (n === ids.length ? "done" : n === 0 ? "none yet" : "partly") + "</td></tr>";
+    }).join("");
+    var overdue = Date.now() >= r.locksAt;
+    return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>' + esc(r.name) + ' is open</h2><span class="hint">Locks ' + esc(fmtWhen(r.locksAt)) + (overdue ? " (time's up)" : "") + "</span></div>" +
+      '<div class="adminbox">' + (mgrs.length ? '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Manager</th><th class="num">Picks</th><th class="num">Status</th></tr>' + rows + "</table>" : '<p class="hint" style="margin:0">Nobody has joined yet.</p>') +
+      '<p class="hint" style="margin:0">Anything left blank is filled in for the manager when you lock: the higher-ranked team, or the other if that one is used up.</p>' +
+      '<div class="btnrow"><button type="button" class="btn small" id="oRefresh">Refresh</button><button type="button" class="btn small" id="oLock">Lock ' + esc(r.name) + "</button></div>" +
+      '<label><span>Change the lock time</span><input id="oExtend" type="datetime-local"></label><div class="btnrow"><button type="button" class="btn small secondary" id="oExtendGo">Save new lock time</button></div>' +
+      "</div></div>";
+  }
+  function extendLock() {
+    var when = $("oExtend").value; if (!when) return note("Choose a new lock time.", "bad");
+    var t = new Date(when).getTime(); if (!(t > Date.now())) return note("The new time needs to be in the future.", "bad");
+    db.put(seasonPath() + "/rounds/" + S.round + "/locksAt", t).then(loadSeason).then(function () { renderRounds(); note("Lock time changed to " + fmtWhen(t) + ".", "ok"); }).catch(function (e) { note(errText(e), "bad"); });
+  }
+
+  function lockRound() {
+    var rid = S.round, r = rounds()[rid];
+    if (!confirm("Lock " + r.name + " now? Players won't be able to change their picks, and any blank ties will be filled in.")) return;
+    S.busy = true;
+    db.put(seasonPath() + "/rounds/" + rid + "/status", "locked").then(function () { return runLockStep(rid); })
+      .then(function () { renderAll(); note(r.name + " is locked. " + S.lockReport.filled + " blanks filled" + (S.lockReport.overridden ? ", " + S.lockReport.overridden + " picks replaced" : "") + ".", "ok"); })
+      .catch(function (e) { note(errText(e) + " The round is locked, but the lock step didn't finish. Use Run the lock step again.", "bad"); loadSeason().then(renderAll); })
+      .then(function () { S.busy = false; });
+  }
+  // Locked first, so nobody can change a pick while this runs. Safe to run again.
+  function runLockStep(rid) {
+    return loadSeason().then(function () { return db.get(seasonPath() + "/picks/" + rid); }).then(function (fresh) {
+      var picksNow = fresh || {}, plan = Logic.planLock(S.season, rid, picksNow);
+      S.lockReport = plan.report;
+      return multi(seasonPath(), plan.updates).then(function () {
+        var merged = Logic.mergedPicks(S.season, rid, picksNow, plan.updates), pub = {}, ties = tiesOf(rid), tieNames = {};
+        Logic.tieIds(ties).forEach(function (t) { tieNames[t] = { home: ties[t].home.short, away: ties[t].away.short }; });
+        Object.keys(merged).forEach(function (uid) {
+          var m = managers()[uid]; if (!m) return;
+          pub[m.name] = {}; Object.keys(merged[uid]).forEach(function (t) { pub[m.name][t] = merged[uid][t].side; });
+        });
+        return db.put("kamikaze_fa_public/seasons/" + S.sid + "/rounds/" + rid, { name: rounds()[rid].name, ties: tieNames, picks: pub });
+      }).then(function () {
+        var u = {}; u["rounds/" + rid + "/filled"] = true; u["rounds/" + rid + "/lockedAt"] = Date.now();
+        return multi(seasonPath(), u);
+      }).then(loadSeason);
+    });
+  }
+
+  /* --- locked / finished: results --- */
+  function resultsHTML(rid, r) {
+    var ties = tiesOf(rid), ids = Logic.tieIds(ties), done = ids.filter(function (t) { return ties[t].winner; }).length;
+    var warn = r.status === "locked" && !r.filled ? '<div class="strip stuck">The lock step didn\'t finish for this round. <button type="button" class="minibtn" id="rLockAgain">Run the lock step</button></div>' : "";
+    var rep = S.lockReport && r.status === "locked" ? '<div class="strip">Lock step: ' + S.lockReport.filled + " blanks filled, " + S.lockReport.overridden + " over-limit picks replaced, " + S.lockReport.none + " ties with no pick possible.</div>" : "";
+    var rows = ids.map(function (t) {
+      var x = ties[t];
+      function btn(side) {
+        var w = x.winner === side;
+        return '<button type="button" class="side ro' + (w ? " won picked" : "") + '" style="min-height:0;padding:12px 14px" data-act="win" data-t="' + t + '" data-side="' + side + '" aria-pressed="' + w + '"><span class="team">' + esc(x[side].short) + '</span><span class="where">' + rankLabel(x[side].rank) + "</span></button>";
+      }
+      return '<div class="adminrow">' + btn("home") + btn("away") + "</div>";
+    }).join("");
+    return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>' + esc(r.name) + " results</h2><span class=\"hint\">" + done + " of " + ids.length + " marked" + (r.status === "resolved" ? " · finished" : "") + "</span></div>" + warn + rep +
+      '<p class="hint" style="padding:12px 16px 0;margin:0">Tap the team that went through. Extra time and penalties count. Tap again to clear.</p>' + '<div style="margin-top:8px">' + rows + "</div>" +
+      '<div class="adminbox"><div class="btnrow"><button type="button" class="btn small" id="rSave">Save results</button>' +
+      (r.status === "locked" ? '<button type="button" class="btn small" id="rResolve"' + (done < ids.length ? " disabled" : "") + ">Mark round finished</button>" : '<button type="button" class="btn small secondary" id="rRecalc">Save and recalculate the table</button>') +
+      "</div></div></div>";
+  }
+  var pendingWinners = {};
+  function toggleWinner(t, side) {
+    var ties = tiesOf(S.round), cur = (t in pendingWinners) ? pendingWinners[t] : (ties[t].winner || null);
+    pendingWinners[t] = cur === side ? null : side;
+    var x = ties[t]; x.winner = pendingWinners[t] || undefined; if (!x.winner) delete x.winner;   // shown straight away, saved on Save
+    renderRounds();
+  }
+  function saveResults(thenResolve) {
+    var rid = S.round, ties = tiesOf(rid), updates = {};
+    Logic.tieIds(ties).forEach(function (t) { if (t in pendingWinners) updates["ties/" + rid + "/" + t + "/winner"] = pendingWinners[t]; });
+    var r = rounds()[rid];
+    if (thenResolve) {
+      var allDone = Logic.tieIds(ties).every(function (t) { return ties[t].winner; });
+      if (!allDone) return note("Mark every tie first.", "bad");
+      updates["rounds/" + rid + "/status"] = "resolved";
+    }
+    S.busy = true;
+    multi(seasonPath(), updates).then(function () { pendingWinners = {}; return loadSeason(); }).then(function () {
+      var needTable = thenResolve || r.status === "resolved";
+      return needTable ? publishLeaderboard() : null;
+    }).then(function () { renderAll(); note(thenResolve ? r.name + " finished and the table is updated." : "Results saved.", "ok"); })
+      .catch(function (e) { note(errText(e), "bad"); loadSeason().then(renderAll); }).then(function () { S.busy = false; });
+  }
+  function publishLeaderboard() {
+    return db.put("kamikaze_fa_public/seasons/" + S.sid + "/leaderboard", Logic.leaderboard(S.season));
+  }
+
+  $("roundsView").addEventListener("click", function (e) {
+    var t = e.target, pill = t.closest("#roundPills [data-rid]");
+    if (pill) { S.round = pill.getAttribute("data-rid"); pendingWinners = {}; loadSeason().then(renderRounds); return; }
+    var w = t.closest("[data-act=win]");
+    if (w) { toggleWinner(w.getAttribute("data-t"), w.getAttribute("data-side")); return; }
+    var id = t.id;
+    if (id === "dRead") {
+      var out = parseDraw($("dText").value); S.draw = { round: S.round, ties: out.ties, skipped: out.skipped }; renderDrawCheck(); return;
+    }
+    if (id === "dSave") return saveDraw();
+    if (id === "dRefresh") return refreshRanks();
+    if (id === "dClear") return clearDraw();
+    if (id === "oGo") return openRound();
+    if (id === "oRefresh") return loadSeason().then(renderRounds);
+    if (id === "oLock") return lockRound();
+    if (id === "oExtendGo") return extendLock();
+    if (id === "rLockAgain") { S.busy = true; return runLockStep(S.round).then(function () { renderAll(); note("Lock step finished.", "ok"); }).catch(function (er) { note(errText(er), "bad"); }).then(function () { S.busy = false; }); }
+    if (id === "rSave") return saveResults(false);
+    if (id === "rResolve") return saveResults(true);
+    if (id === "rRecalc") return saveResults(false);
+    var act = t.getAttribute && t.getAttribute("data-act");
+    if (act && S.draw) {
+      var i = parseInt(t.getAttribute("data-i"), 10), k = t.getAttribute("data-k"), sd = S.draw.ties[i][k];
+      if (act === "use" && sd.sug) S.draw.ties[i][k] = { raw: sd.raw, matched: true, club: sd.sug.name, short: sd.sug.short || sd.sug.name, rank: sd.sug.rank };
+      if (act === "nl") { sd.rank = 93; sd.manual = true; }
+      renderDrawCheck();
+    }
+  });
+  $("roundsView").addEventListener("input", function (e) {
+    var t = e.target;
+    if (t.classList && t.classList.contains("rankin") && S.draw) {
+      var side = S.draw.ties[parseInt(t.getAttribute("data-i"), 10)][t.getAttribute("data-k")];
+      side.rank = t.value === "" ? null : Number(t.value); side.manual = true; updateDrawSummary();
+    }
+  });
+
+  /* ---------------- Players tab ---------------- */
+  function renderPlayers() {
+    if (!S.sid) return needSeason("playersView");
+    var mgrs = managerList(), openId = Object.keys(rounds()).filter(function (id) { return rounds()[id].status === "open"; })[0];
+    var rows = mgrs.map(function (m) {
+      var prog = "";
+      if (openId) { var ids = Logic.tieIds(tiesOf(openId)), mine = picksOf(openId)[m.uid] || {}; prog = ids.filter(function (t) { return Logic.validSide(mine[t]); }).length + " of " + ids.length; }
+      return "<tr><td>" + esc(m.name) + '</td><td class="num">' + esc(prog) + '</td><td class="num"><button type="button" class="minibtn" data-rm="' + esc(m.uid) + '">Remove</button></td></tr>';
+    }).join("");
+    var lb = Logic.leaderboard(S.season);
+    $("playersView").innerHTML =
+      '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Managers</h2><span class="hint">Join code: <b>' + esc(S.season.joinCode || "") + "</b></span></div>" +
+      '<div class="adminbox">' + (mgrs.length ? '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Name</th><th class="num">' + (openId ? esc(rounds()[openId].name) + " picks" : "") + '</th><th class="num"></th></tr>' + rows + "</table>" : '<p class="hint" style="margin:0">Nobody has joined yet. Share the join code and the address of the player page.</p>') +
+      '<p class="hint" style="margin:0">Removing a manager frees their name so they can join again. It doesn\'t delete their picks.</p></div></div>' +
+      '<div class="panel" style="margin-top:16px"><div class="phead"><h2>The table</h2><span class="hint">Finished rounds only</span></div>' +
+      (lb.length ? '<table class="lbtable"><tr><th>#</th><th>Manager</th><th class="n">Points</th><th class="n">Correct</th><th class="n">Best call</th></tr>' + lb.map(function (r, i) { return '<tr><td class="pos">' + (i + 1) + "</td><td>" + esc(r.name) + '</td><td class="n">' + fmtPts(r.points) + '</td><td class="n">' + r.correct + '</td><td class="n">' + (r.bestCall ? fmtPts(r.bestCall) : "-") + "</td></tr>"; }).join("") + "</table>" : '<div class="empty"><b>Nothing yet</b>Scores appear once a round is finished.</div>') +
+      '<div class="adminbox"><div class="btnrow"><button type="button" class="btn small secondary" id="pRecalc">Recalculate and publish the table</button></div></div></div>';
+  }
+  $("playersView").addEventListener("click", function (e) {
+    var t = e.target;
+    if (t.id === "pRecalc") {
+      publishLeaderboard().then(function () { note("The table has been recalculated and published.", "ok"); }).catch(function (er) { note(errText(er), "bad"); });
+      return;
+    }
+    var rm = t.getAttribute && t.getAttribute("data-rm");
+    if (rm) {
+      var m = managers()[rm];
+      if (!confirm("Remove " + m.name + "? Their name becomes free so they can join again. Their picks are kept.")) return;
+      var u = {}; u["managers/" + rm] = null; u["names/" + m.name.toLowerCase()] = null;
+      multi(seasonPath(), u).then(loadSeason).then(function () { renderAll(); note(m.name + " removed.", "ok"); }).catch(function (er) { note(errText(er), "bad"); });
+    }
+  });
+
+  /* ---------------- start ---------------- */
+  if (DEMO) $("banner").innerHTML = '<div class="demobanner">Demo data. Sign in with <b>admin@example.com</b> / <b>admin1234</b>. Nothing here touches your real database.</div>';
+  db = DEMO ? new MockDb(buildDemoSeed()) : new RestDb(CONFIG.DB_URL);
+  if (DEMO) window.__admin.mock = { db: db, auth: Authn };
+  boot();
+})();
+</script>
+</body>
+</html>
