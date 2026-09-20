@@ -626,7 +626,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   function loadRound(rid) {
     return db.get(P("rounds/" + rid)).then(function (r) {
       if (!r) return null;
-      var round = { id: rid, name: r.name, mult: r.mult || 1, status: r.status, locksAt: r.locksAt, ties: {}, picks: {} };
+      var round = { id: rid, name: r.name, mult: r.mult || 1, status: r.status, locksAt: r.locksAt, filled: !!r.filled, ties: {}, picks: {} };
       if (r.status === "draft") return round;
       return Promise.all([db.get(P("ties/" + rid)), db.get(P("picks/" + rid + "/" + AUTH.uid))]).then(function (x) {
         round.ties = x[0] || {}; round.picks = x[1] || {};
@@ -635,23 +635,56 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     });
   }
 
-  function loadApp() {
+  // How often an open page checks whether the admin has changed anything (demo pages can shorten it with ?refresh=1000).
+  var REFRESH_MS = DEMO && Number(params.get("refresh")) > 0 ? Number(params.get("refresh")) : 30000;
+  function sigOf(list) { return list.map(function (r) { return [r.id, r.status, r.locksAt, r.filled ? 1 : 0].join(":"); }).join("|"); }
+
+  // quiet = a background refresh: keep the tab and round the person is looking at, unless a new round has opened.
+  function loadApp(quiet) {
+    var prevOpen = (S.rounds.filter(function (r) { return r.status === "open"; })[0] || {}).id, prevView = S.view;
     return Promise.all([
       db.get("kamikaze_fa_public/seasons/" + S.sid + "/config").catch(function () { return null; }),
       Promise.all(CONFIG.ROUND_IDS.map(loadRound))
     ]).then(function (x) {
       if (x[0]) S.cfg = { maxUses: x[0].maxUses || 2, cap: x[0].cap || 30, spread: x[0].spread || 17 };
       S.rounds = x[1].filter(Boolean);
+      S.sig = sigOf(S.rounds);
       var live = S.rounds.filter(function (r) { return r.status !== "draft"; });
       var open = live.filter(function (r) { return r.status === "open"; })[0];
-      S.view = (open || live[live.length - 1] || {}).id || null;
+      if (quiet && prevView && live.some(function (r) { return r.id === prevView; }) && !(open && open.id !== prevOpen)) S.view = prevView;
+      else S.view = (open || live[live.length - 1] || {}).id || null;
       $("loading").hidden = true; $("authView").hidden = true; $("errorView").hidden = true;
-      $("pickView").hidden = false; $("meChip").hidden = false; $("signOut").hidden = false; $("tabs").hidden = false;
-      $("tabs").querySelector('[data-tab="pick"]').click();
+      $("meChip").hidden = false; $("signOut").hidden = false; $("tabs").hidden = false;
+      if (!quiet) { $("pickView").hidden = false; $("tabs").querySelector('[data-tab="pick"]').click(); }
       renderAll();
-      if (!loadApp.timer) loadApp.timer = setInterval(renderDeadline, 30000);
+      if (!loadApp.timer) loadApp.timer = setInterval(tick, REFRESH_MS < 30000 ? REFRESH_MS : 30000);
     });
   }
+
+  // Runs every so often while the page is open: keep the clock right, and pick up changes the admin has made.
+  var refreshing = false;
+  function tick() {
+    var r = roundById(S.view), e = !!r && isEditable(r);
+    if (S.lastEditable !== undefined && e !== S.lastEditable) renderPick();     // the deadline has passed
+    S.lastEditable = e;
+    renderDeadline();
+    if (Date.now() - (tick.last || 0) >= REFRESH_MS - 50) { tick.last = Date.now(); quietRefresh(); }
+  }
+  function quietRefresh() {
+    if (refreshing || !S.who || !S.sid || saving > 0) return;
+    refreshing = true;
+    Promise.all(CONFIG.ROUND_IDS.map(function (id) {
+      return db.get(P("rounds/" + id)).then(function (r) { return r ? { id: id, status: r.status, locksAt: r.locksAt, filled: !!r.filled } : null; });
+    })).then(function (list) {
+      if (sigOf(list.filter(Boolean)) === S.sig) return null;
+      var before = roundById(S.view), wasEditable = !!before && isEditable(before);
+      return loadApp(true).then(function () {
+        var after = roundById(S.view);
+        if (wasEditable && after && !isEditable(after)) $("msg").textContent = after.name + " has now locked. Your picks are final.";
+      });
+    }).catch(function () { /* try again next time */ }).then(function () { refreshing = false; });
+  }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) quietRefresh(); });
 
   // The live season can change while a page is open, so ask again whenever someone signs in or joins.
   function refreshSeason() {
