@@ -337,15 +337,16 @@ nav.tabs button{padding:10px 11px}
     chance: function (a, b, spread) { return 1 / (1 + Math.exp(-(b - a) / spread)); },
 
     tieIds: function (ties) { return Object.keys(ties || {}).sort(); },
-    clubOf: function (tie, side) { return tie[side].club || tie[side].short; },
+    // A club is identified by its stable key, so a different spelling in a later round is still the same club.
+    clubOf: function (tie, side) { return tie[side].key || tie[side].club || tie[side].short; },
     validSide: function (pk) { return !!pk && (pk.side === "home" || pk.side === "away"); },
 
     // Turn a draft tie into a frozen one: chance of going through and points, multiplier included.
     freezeTie: function (t, cfg, mult) {
       var ph = Logic.chance(t.home.rank, t.away.rank, cfg.spread), pa = 1 - ph;
       return {
-        home: { club: t.home.club, short: t.home.short, rank: t.home.rank, p: round4(ph) },
-        away: { club: t.away.club, short: t.away.short, rank: t.away.rank, p: round4(pa) },
+        home: { key: t.home.key, club: t.home.club, short: t.home.short, rank: t.home.rank, p: round4(ph) },
+        away: { key: t.away.key, club: t.away.club, short: t.away.short, rank: t.away.rank, p: round4(pa) },
         ptsHome: round4(Math.min(1 / ph, cfg.cap) * mult),
         ptsAway: round4(Math.min(1 / pa, cfg.cap) * mult)
       };
@@ -460,7 +461,10 @@ nav.tabs button{padding:10px 11px}
     ["crewe alexandra", "crewe"], ["swindon town", "swindon"], ["fleetwood town", "fleetwood"], ["colchester united", "colchester"],
     ["cheltenham town", "cheltenham"], ["oldham athletic", "oldham"], ["rotherham united", "rotherham"], ["northampton town", "northampton"],
     ["shrewsbury town", "shrewsbury"], ["newport county", "newport"], ["exeter city", "exeter"], ["accrington stanley", "accrington"],
-    ["crawley town", "crawley"], ["york city", "york"], ["gillingham", "gills"], ["bristol rovers", "gas"]
+    ["crawley town", "crawley"], ["york city", "york"], ["gillingham", "gills"], ["bristol rovers", "gas"],
+    ["leyton orient", "orient"], ["milton keynes dons", "mk dons", "mk"], ["wycombe wanderers", "wycombe"], ["peterborough united", "peterborough", "posh"],
+    ["lincoln city", "lincoln"], ["doncaster rovers", "doncaster"], ["burton albion", "burton"], ["mansfield town", "mansfield"], ["harrogate town", "harrogate"],
+    ["huddersfield town", "huddersfield"], ["cambridge united", "cambridge utd"], ["bristol city", "bristol c"], ["barnsley"], ["blackpool"]
   ];
   var SHORT = { "manchester city": "Man City", "manchester united": "Man Utd", "tottenham hotspur": "Spurs", "wolverhampton wanderers": "Wolves",
     "nottingham forest": "Forest", "newcastle united": "Newcastle", "west ham united": "West Ham", "brighton and hove albion": "Brighton",
@@ -987,14 +991,26 @@ nav.tabs button{padding:10px 11px}
   }
 
   /* --- draft: enter the draw, open the round --- */
+  // Suggest a club only when exactly one known club contains every word that was typed, so
+  // "Wycombe" finds Wycombe Wanderers but "Sheffield" (two clubs) or "Cambridge City" (a different club) find nothing.
+  function tokenSuggest(name) {
+    var want = norm(name).split(" "), found = [];
+    Object.keys(registry()).forEach(function (k) {
+      var have = norm(registry()[k].name).split(" ");
+      if (want.every(function (w) { return have.indexOf(w) !== -1; })) found.push(registry()[k]);
+    });
+    return found.length === 1 ? found[0] : null;
+  }
   function resolveClub(raw) {
     var name = raw.trim(), key = clubKey(name), c = registry()[key];
-    if (c) return { raw: name, matched: true, club: c.name, short: c.short || c.name, rank: c.rank };
-    var n = CANON[norm(name)] || norm(name), best = null, bd = 99;
-    Object.keys(registry()).forEach(function (k) {
-      var d = lev(n, k.replace(/-/g, " ")); if (d < bd) { bd = d; best = registry()[k]; }
-    });
-    return { raw: name, matched: false, club: name, short: name, rank: null, sug: bd <= 3 ? best : null };
+    if (c) return { raw: name, matched: true, key: key, club: c.name, short: c.short || c.name, rank: c.rank };
+    var best = tokenSuggest(name);
+    if (!best) {
+      var n = CANON[norm(name)] || norm(name), bd = 99;
+      Object.keys(registry()).forEach(function (k) { var d = lev(n, k.replace(/-/g, " ")); if (d < bd) { bd = d; best = registry()[k]; } });
+      if (bd > 3) best = null;
+    }
+    return { raw: name, matched: false, key: key, club: name, short: name, rank: null, sug: best };
   }
   function parseDraw(text) {
     var ties = [], skipped = [];
@@ -1010,7 +1026,7 @@ nav.tabs button{padding:10px 11px}
   function rankOk(sd) { return typeof sd.rank === "number" && sd.rank >= 1 && sd.rank <= 200; }
   function drawDuplicates(ties) {
     var seen = {}, dups = [];
-    ties.forEach(function (t) { [t.home, t.away].forEach(function (sd) { var k = clubKey(sd.club); if (seen[k]) dups.push(sd.club); seen[k] = 1; }); });
+    ties.forEach(function (t) { [t.home, t.away].forEach(function (sd) { var k = sd.key || clubKey(sd.club); if (seen[k]) dups.push(sd.club); seen[k] = 1; }); });
     return dups;
   }
 
@@ -1068,7 +1084,10 @@ nav.tabs button{padding:10px 11px}
   function saveDraw() {
     var d = S.draw, rid = S.round, ties = {};
     d.ties.forEach(function (t, i) {
-      ties[padId(i)] = { home: { club: t.home.club, short: t.home.short, rank: t.home.rank }, away: { club: t.away.club, short: t.away.short, rank: t.away.rank } };
+      ties[padId(i)] = {
+        home: { key: t.home.key || clubKey(t.home.club), club: t.home.club, short: t.home.short, rank: t.home.rank },
+        away: { key: t.away.key || clubKey(t.away.club), club: t.away.club, short: t.away.short, rank: t.away.rank }
+      };
     });
     S.busy = true;
     db.put(seasonPath() + "/ties/" + rid, ties).then(function () { S.draw = null; return loadSeason(); })
@@ -1102,7 +1121,10 @@ nav.tabs button{padding:10px 11px}
     if (missing) return note("Some clubs have no position. Re-enter the draw.", "bad");
     if (!confirm("Open " + r.name + " with " + ids.length + " ties, locking " + fmtWhen(locksAt) + "? Players will be able to see the ties and pick.")) return;
     var c = cfg(), updates = {};
-    ids.forEach(function (t) { updates["ties/" + rid + "/" + t] = Logic.freezeTie(ties[t], c, r.mult); });
+    ids.forEach(function (t) {
+      var x = ties[t]; x.home.key = x.home.key || clubKey(x.home.club); x.away.key = x.away.key || clubKey(x.away.club);
+      updates["ties/" + rid + "/" + t] = Logic.freezeTie(x, c, r.mult);
+    });
     updates["rounds/" + rid + "/locksAt"] = locksAt;
     updates["rounds/" + rid + "/status"] = "open";
     S.busy = true;
@@ -1229,7 +1251,7 @@ nav.tabs button{padding:10px 11px}
     var act = t.getAttribute && t.getAttribute("data-act");
     if (act && S.draw) {
       var i = parseInt(t.getAttribute("data-i"), 10), k = t.getAttribute("data-k"), sd = S.draw.ties[i][k];
-      if (act === "use" && sd.sug) S.draw.ties[i][k] = { raw: sd.raw, matched: true, club: sd.sug.name, short: sd.sug.short || sd.sug.name, rank: sd.sug.rank };
+      if (act === "use" && sd.sug) S.draw.ties[i][k] = { raw: sd.raw, matched: true, key: clubKey(sd.sug.name), club: sd.sug.name, short: sd.sug.short || sd.sug.name, rank: sd.sug.rank };
       if (act === "nl") { sd.rank = 93; sd.manual = true; }
       renderDrawCheck();
     }
