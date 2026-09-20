@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Kamikaze Football · FA Cup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  color-scheme: dark;
+  --bg:#080d18; --panel:#101a2c; --panel-2:#16223a; --raised:#1d2c49;
+  --line:#283a5c; --line-soft:#1c2a44;
+  --ink:#eaf1fb; --muted:#8ea0c0; --faint:#5e7095;
+  --go:#19e2a0; --go-dim:#0e7d5c; --warn:#ffc043; --danger:#ff5b7e;
+  --focus:#7fb2ff;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 12px 30px -18px rgba(0,0,0,.8);
+  --disp:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --num:ui-monospace,'SF Mono','Cascadia Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:radial-gradient(1200px 500px at 50% -200px, rgba(25,226,160,.07), transparent 60%), var(--bg);
+  color:var(--ink); font-family:var(--body); font-size:15px; line-height:1.45;
+  -webkit-font-smoothing:antialiased; padding-bottom:48px; min-height:100vh;
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+
+/* Masthead */
+header.top{border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, rgba(16,26,44,.9), rgba(8,13,24,.4))}
+.mast{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.crest{width:34px;height:34px;flex:0 0 auto;filter:drop-shadow(0 0 6px rgba(148,163,184,.35))}
+.crest-wind path{animation:crestDrift 2.4s ease-in-out infinite}
+.crest-wind path:nth-child(2){animation-delay:.15s}
+.crest-wind path:nth-child(3){animation-delay:.3s}
+@keyframes crestDrift{0%,100%{transform:translateX(0);opacity:.5}50%{transform:translateX(3px);opacity:.85}}
+@media (prefers-reduced-motion:reduce){.crest-wind path{animation:none}}
+.title h1{font-family:var(--disp);font-weight:700;letter-spacing:.04em;margin:0;font-size:21px;line-height:1;text-transform:uppercase}
+.title h1 .k{color:var(--go)}
+.title .sub{font-size:11.5px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
+.spacer{flex:1}
+.chip{font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px;
+  padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--go);box-shadow:0 0 8px var(--go)}
+
+main{padding-top:18px}
+.panel{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;box-shadow:var(--shadow)}
+.panel + .panel{margin-top:16px}
+.phead{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.phead h2{font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em;font-size:16px;margin:0}
+.phead .hint{font-size:12.5px;color:var(--muted);margin-left:auto}
+.rulesbody{padding:12px 16px 14px;font-size:14.5px;color:var(--muted);line-height:1.55}
+.rulesbody p{margin:0 0 8px}
+.rulesbody p:last-child{margin:0}
+.rulesbody b{color:var(--ink)}
+.multtag{display:inline-block;font-family:var(--disp);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  font-size:12px;border:1px solid var(--warn);color:var(--warn);background:rgba(255,192,67,.08);border-radius:4px;padding:1px 7px;margin-right:6px}
+.tune select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line-soft)}
+nav.tabs button{background:none;border:0;color:var(--muted);font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;
+  font-size:14px;font-weight:600;padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
+.rulesbody h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:.04em;font-size:16px;margin:22px 0 6px;color:var(--ink)}
+.rulesbody h3:first-child{margin-top:6px}
+.rulesbody .note{font-size:13px;color:var(--faint)}
+.quip{font-style:italic;color:var(--faint)}
+.rulestag{font-family:var(--disp);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--go);
+  border:1px solid var(--go-dim);border-radius:5px;padding:1px 7px;margin-left:8px;vertical-align:middle}
+.rulestable{margin:8px 0;width:auto;max-width:420px;border-collapse:collapse}
+.rulestable th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--faint);text-align:left;font-weight:600;padding:0 16px 4px 0}
+.rulestable td{border-bottom:1px solid var(--line-soft);padding:7px 16px 7px 0;font-size:14px}
+.rulestable td.num,.rulestable th.num{font-family:var(--num);text-align:right;padding:7px 0 7px 22px;color:var(--ink)}
+.rulestable th.num{padding:0 0 4px 22px;font-family:var(--disp);color:var(--faint)}
+.ruleslist{margin:8px 0 4px;padding-left:22px;color:var(--muted);font-size:14.5px;line-height:1.6}
+.ruleslist li{margin-bottom:6px}
+.ruleslist b{color:var(--ink)}
+.adminbox{padding:14px 16px 16px;display:grid;gap:12px}
+.adminbox label{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+.adminbox select,.adminbox textarea,.rankin{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;font:inherit}
+.adminbox select{padding:10px 12px}
+.adminbox textarea{min-height:190px;padding:12px;font-family:var(--num);font-size:13px;line-height:1.55;resize:vertical;width:100%}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.btn.small{flex:0 1 auto;padding:9px 14px;font-size:14px}
+.adminrow{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line-soft)}
+.adminside{padding:10px 14px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.adminside + .adminside{border-left:1px solid var(--line-soft)}
+.adminside .nm{font-family:var(--disp);font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.02em;line-height:1.1;overflow-wrap:anywhere}
+.adminside .raw{font-size:12px;color:var(--faint)}
+.adminside .line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rankin{width:70px;padding:6px 8px;font-family:var(--num);font-size:13px}
+.minibtn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:4px 9px;font-size:12px;cursor:pointer}
+.minibtn:hover{border-color:var(--go-dim);color:var(--go)}
+.adminsum{padding:12px 16px;border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
+.adminsum b{color:var(--ink)}
+.empty{padding:34px 18px;text-align:center;color:var(--muted);font-size:14px}
+.empty b{display:block;font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em;font-size:17px;color:var(--ink);margin-bottom:4px}
+.legend{padding:12px 16px;font-size:12px;color:var(--faint);border-top:1px solid var(--line-soft)}
+
+/* Tally bar */
+.tally{position:sticky;top:0;z-index:10;margin:16px 0 0;padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:rgba(16,26,44,.92);backdrop-filter:blur(8px);
+  border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.tally .lab{font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--muted)}
+.tally .big{font-family:var(--disp);font-weight:700;font-size:24px;line-height:1.05}
+.tally .big span{font-size:14px;font-weight:500;color:var(--muted);letter-spacing:.02em}
+.tally .right{text-align:right}
+.tally .sumnum{font-family:var(--num);font-weight:600;font-size:22px;color:var(--go);font-variant-numeric:tabular-nums}
+
+/* Ties */
+.ties{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:14px}
+.tie{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.tie.done{border-color:var(--go-dim)}
+.sides{display:grid;grid-template-columns:1fr 1fr}
+.side{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;
+  padding:14px 14px 12px;background:transparent;border:0;cursor:pointer;min-height:168px;
+  -webkit-tap-highlight-color:transparent}
+.side + .side{border-left:1px solid var(--line-soft)}
+.side:hover:not([aria-disabled="true"]):not([aria-pressed="true"]){background:var(--panel-2)}
+.side .team{font-family:var(--disp);font-weight:700;font-size:21px;letter-spacing:.02em;text-transform:uppercase;line-height:1.05;padding-right:52px}
+.side .where{font-size:12.5px;color:var(--muted)}
+.side .pts{margin-top:auto;font-family:var(--disp);font-weight:700;font-size:52px;line-height:.95;letter-spacing:-.005em;font-variant-numeric:tabular-nums}
+.side .pts small{font-size:16px;font-weight:600;letter-spacing:.06em;margin-left:4px;text-transform:uppercase;color:var(--muted)}
+.side .chance{font-family:var(--num);font-size:12px;color:var(--muted);margin-top:2px}
+.side .usesrow{display:flex;align-items:center;gap:6px;margin-top:6px;font-family:var(--num);font-size:11.5px;color:var(--faint)}
+.upips{display:inline-flex;gap:3px}
+.upips i{display:block;width:4px;height:14px;border-radius:2px;background:var(--line)}
+.upips i.on{background:var(--muted)}
+.upips i.now{background:var(--warn)}
+.upips i.full{background:var(--danger)}
+.tag{display:inline-block;margin-top:6px;width:fit-content;font-family:var(--disp);font-size:10.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;border-radius:4px;padding:1px 6px;border:1px solid var(--line);color:var(--muted)}
+.tag.long{border-color:var(--go-dim);color:var(--go);background:rgba(25,226,160,.08)}
+.tag.cap{border-color:var(--warn);color:var(--warn);background:rgba(255,192,67,.08)}
+.tag.out{border-color:var(--danger);color:var(--danger);background:rgba(255,91,126,.08)}
+
+.tier-safe .pts{color:var(--ink)}
+.tier-mid .pts{color:var(--warn)}
+.tier-long .pts{color:var(--go);text-shadow:0 0 18px rgba(25,226,160,.35)}
+
+.side[aria-pressed="true"]{background:rgba(25,226,160,.09);box-shadow:inset 0 0 0 2px var(--go)}
+.side[aria-pressed="true"]::after{content:"Picked";position:absolute;top:12px;right:12px;
+  font-family:var(--disp);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--go-dim);color:var(--go);background:rgba(25,226,160,.12);border-radius:4px;padding:1px 6px}
+.side[aria-disabled="true"]{cursor:not-allowed}
+.side.used-up{opacity:.5}
+.side.used-up .team,.side.used-up .pts .num{text-decoration:line-through;text-decoration-thickness:2px}
+.side.locked{cursor:default}
+
+.strip{padding:8px 14px;font-size:13px;color:var(--warn);background:rgba(255,192,67,.07);border-bottom:1px solid var(--line-soft)}
+.strip.stuck{color:var(--danger);background:rgba(255,91,126,.07)}
+
+.why{border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
+.why summary{padding:9px 14px;cursor:pointer;list-style:none;font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:12.5px}
+.why summary::-webkit-details-marker{display:none}
+.why summary::before{content:"+  ";color:var(--go)}
+.why[open] summary::before{content:"\2212  "}
+.why p{margin:0;padding:0 14px 12px}
+
+/* Actions */
+.actions{margin-top:16px;display:flex;gap:10px}
+.btn{flex:1;padding:13px 16px;border-radius:10px;border:1px solid var(--go);background:var(--go);color:#032117;
+  font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:16px;font-weight:700;cursor:pointer}
+.btn.secondary{background:transparent;border-color:var(--line);color:var(--muted)}
+.btn[disabled]{opacity:.35;cursor:not-allowed}
+.msg{min-height:1.4em;margin-top:10px;font-size:13.5px;color:var(--muted)}
+
+/* Tuning */
+.tune{margin-top:22px}
+.tune summary{padding:12px 16px;cursor:pointer;font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:14px;color:var(--muted);list-style:none}
+.tune summary::-webkit-details-marker{display:none}
+.tune .body{padding:4px 16px 16px;display:grid;gap:16px;font-size:14px}
+.tune label{display:grid;gap:4px}
+.tune input[type=range]{width:100%;accent-color:var(--go)}
+.tune .hint{color:var(--faint);font-size:12.5px}
+.tune b{font-family:var(--num);color:var(--ink)}
+.footnote{text-align:center;color:var(--faint);font-size:12px;margin-top:18px}
+
+@media (max-width:480px){
+  .side .pts{font-size:46px}
+  .side .team{font-size:19px}
+}
+
+.rounds{display:flex;gap:6px;overflow-x:auto;padding:14px 0 2px}
+.rounds button{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;
+  padding:6px 14px;font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:13px;font-weight:600;cursor:pointer}
+.rounds button[aria-pressed="true"]{border-color:var(--go);color:var(--go);background:rgba(25,226,160,.08)}
+.deadline{margin-top:14px;padding:10px 16px;border:1px solid var(--line-soft);border-radius:12px;background:var(--panel);font-size:14px;color:var(--muted);display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.deadline b{color:var(--ink)}
+.deadline.locked b{color:var(--warn)}
+.side.won{box-shadow:inset 0 0 0 2px var(--go-dim)}
+.side.lost.picked{box-shadow:inset 0 0 0 2px var(--danger)}
+.side.ro{cursor:default}
+.res{margin-top:6px;font-family:var(--num);font-size:12.5px}
+.res.ok{color:var(--go)} .res.no{color:var(--danger)} .res.wait{color:var(--faint)}
+.autoline{padding:8px 14px;font-size:13px;color:var(--muted);border-top:1px solid var(--line-soft)}
+.autoline b{color:var(--ink)}
+.savestate{font-family:var(--num);font-size:12px;color:var(--faint);min-height:1.2em;text-align:right;margin-top:8px}
+.demobanner{margin:12px 0 0;padding:8px 12px;border:1px dashed var(--warn);border-radius:10px;color:var(--warn);font-size:13px}
+.lbtable{width:100%;border-collapse:collapse}
+.lbtable th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--faint);text-align:left;font-weight:600;padding:10px 12px}
+.lbtable td{padding:10px 12px;border-top:1px solid var(--line-soft);font-size:14.5px}
+.lbtable td.n,.lbtable th.n{text-align:right;font-family:var(--num)}
+.lbtable tr.me td{background:rgba(25,226,160,.07)}
+.lbtable td.pos{font-family:var(--num);color:var(--muted);width:34px}
+.errorbox{margin-top:22px}
+.sides{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.side{min-width:0}
+/* Reserve a row for the "Picked" tag so long club names never run into it */
+.side::before{content:"";display:block;height:18px;flex:0 0 auto}
+.side[aria-pressed="true"]::after{right:auto;left:14px;top:12px}
+.side .team{padding-right:0}
+
+.adminbox input{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;font:inherit;padding:10px 12px;width:100%}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font:inherit;font-size:13.5px;padding:6px 4px}
+.linkbtn:hover{color:var(--go)}
+#signOut{font-size:12.5px}
+
+[hidden]{display:none !important}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap mast" style="padding-left:16px;padding-right:16px">
+    <svg class="crest" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <g class="crest-wind">
+        <path d="M4 24 C14 20, 22 21, 30 23" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.5"/>
+        <path d="M2 33 C15 30, 25 31, 33 33" stroke="#94a3b8" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.75"/>
+        <path d="M6 42 C17 40, 25 39, 31 38" stroke="#64748b" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+      </g>
+      <g transform="translate(42,32)">
+        <circle r="15" fill="#f8fafc" stroke="#0b1626" stroke-width="2"/>
+        <polygon points="0,-6.5 6,-2 4,5 -4,5 -6,-2" fill="#0b1626"/>
+        <line x1="0" y1="-6.5" x2="0" y2="-13" stroke="#0b1626" stroke-width="1.8"/>
+        <line x1="6" y1="-2" x2="13" y2="-4.5" stroke="#0b1626" stroke-width="1.8"/>
+        <line x1="4" y1="5" x2="8" y2="12" stroke="#0b1626" stroke-width="1.8"/>
+        <line x1="-4" y1="5" x2="-8" y2="12" stroke="#0b1626" stroke-width="1.8"/>
+        <line x1="-6" y1="-2" x2="-13" y2="-4.5" stroke="#0b1626" stroke-width="1.8"/>
+      </g>
+    </svg>
+    <div class="title">
+      <h1><span class="k">Kamikaze</span> Football</h1>
+      <div class="sub">FA Cup · Giant-killer</div>
+    </div>
+    <div class="spacer"></div>
+    <span class="chip" id="meChip" hidden><span class="dot"></span><span id="meText"></span></span>
+    <button type="button" class="linkbtn" id="signOut" hidden>Sign out</button>
+  </div>
+  <div class="wrap">
+    <nav class="tabs" id="tabs" hidden>
+      <button data-tab="pick" class="on">Picks</button>
+      <button data-tab="table">Table</button>
+      <button data-tab="rules">Rules</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="banner"></div>
+  <div id="loading" class="panel" style="margin-top:18px"><div class="empty"><b>Loading</b>Getting your picks.</div></div>
+  <div id="errorView" class="panel errorbox" hidden></div>
+  <div id="authView" class="panel" style="margin-top:18px" hidden></div>
+
+  <div id="pickView" hidden>
+    <div class="rounds" id="rounds" role="group" aria-label="Rounds"></div>
+    <div class="deadline" id="deadline"></div>
+
+    <div class="tally" role="status" aria-live="polite">
+      <div>
+        <div class="lab" id="tallyLab">Ties called</div>
+        <div class="big" id="tallyBig"></div>
+      </div>
+      <div class="right">
+        <div class="lab" id="sumLab">If all correct</div>
+        <div class="sumnum" id="sumNum">0</div>
+      </div>
+    </div>
+
+    <ul class="ties" id="ties"></ul>
+    <div class="savestate" id="saveState" role="status" aria-live="polite"></div>
+    <div class="actions" id="actions"></div>
+    <div class="msg" id="msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <div id="tableView" hidden></div>
+  <div id="rulesView" hidden></div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= SETTINGS: edit these lines ================= */
+  var CONFIG = {
+    // Your Realtime Database URL, no trailing slash. While this still says YOUR-PROJECT the page runs on demo data.
+    DB_URL: "https://kamikaze-fa-cup-default-rtdb.europe-west1.firebasedatabase.app",
+    // Firebase project settings, Web API key. Not a secret: the database rules are what protect the data.
+    API_KEY: "AIzaSyDwZ0V9GCG2i28qF0dmt9iMA0aPxpiZHr8",
+    // The admin console must create rounds with exactly these ids.
+    ROUND_IDS: ["r3", "r4", "r5", "qf", "sf", "f"]
+  };
+  /* ================================================================== */
+
+  var params = new URLSearchParams(location.search);
+  var DEMO = params.get("demo") === "1" || CONFIG.DB_URL.indexOf("YOUR-PROJECT") !== -1;
+  var AUTH = { uid: null, idToken: null, refreshToken: null, exp: 0, email: null };
+  var NAME_OK = /^[A-Za-z0-9 ]{2,20}$/;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+  /* ---------------- scoring helpers (same maths as the rules page) ---------------- */
+  function chanceOf(a, b, spread) { return 1 / (1 + Math.exp(-(b - a) / spread)); }
+  function fmtPts(x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }
+  function fmtChance(p) { var c = p * 100; if (c >= 99.5) return ">99%"; if (c < 1) return "<1%"; return Math.round(c) + "%"; }
+  function tierClass(base) { return base < 2.5 ? "tier-safe" : base < 8 ? "tier-mid" : "tier-long"; }
+  function ordinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function rankLabel(r) {
+    if (r > 92) return "Non-league";
+    var name = r <= 20 ? "Premier League" : r <= 44 ? "Championship" : r <= 68 ? "League One" : "League Two";
+    var start = r <= 20 ? 0 : r <= 44 ? 20 : r <= 68 ? 44 : 68;
+    return name + ", " + ordinal(r - start);
+  }
+
+  /* ---------------- sign-in service: Firebase Authentication over REST, or a stand-in for the demo ---------------- */
+  function denied() { var e = new Error("denied"); e.denied = true; return e; }
+  function authError(code) { var e = new Error(code); e.code = String(code).split(/[ :]/)[0]; return e; }
+
+  function RestAuth(key) { this.key = key; }
+  RestAuth.prototype.idt = function (method, body) {
+    return fetch("https://identitytoolkit.googleapis.com/v1/accounts:" + method + "?key=" + encodeURIComponent(this.key), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+    }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw authError((j.error && j.error.message) || "UNKNOWN"); return j; }); });
+  };
+  RestAuth.prototype.signIn = function (email, password) { return this.idt("signInWithPassword", { email: email, password: password, returnSecureToken: true }); };
+  RestAuth.prototype.signUp = function (email, password) { return this.idt("signUp", { email: email, password: password, returnSecureToken: true }); };
+  RestAuth.prototype.reset = function (email) { return this.idt("sendOobCode", { requestType: "PASSWORD_RESET", email: email }); };
+  RestAuth.prototype.remove = function (idToken) { return this.idt("delete", { idToken: idToken }); };
+  RestAuth.prototype.refresh = function (refreshToken) {
+    return fetch("https://securetoken.googleapis.com/v1/token?key=" + encodeURIComponent(this.key), {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(refreshToken)
+    }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw authError((j.error && j.error.message) || "UNKNOWN"); return j; }); });
+  };
+
+  function MockAuth() {
+    this.accounts = { "demo@example.com": { uid: "u-demo", password: "demo1234" } };
+    this.resets = [];
+  }
+  MockAuth.prototype.later = function (fn) {
+    return new Promise(function (res, rej) { setTimeout(function () { try { res(fn()); } catch (e) { rej(e); } }, 90); });
+  };
+  MockAuth.prototype.session = function (email, uid) {
+    return { localId: uid, email: email, idToken: "tok-" + uid, refreshToken: "ref-" + uid, expiresIn: "3600" };
+  };
+  MockAuth.prototype.signIn = function (email, password) {
+    var self = this;
+    return this.later(function () {
+      var a = self.accounts[email.toLowerCase()];
+      if (!a || a.password !== password) throw authError("INVALID_LOGIN_CREDENTIALS");
+      return self.session(email, a.uid);
+    });
+  };
+  MockAuth.prototype.signUp = function (email, password) {
+    var self = this;
+    return this.later(function () {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw authError("INVALID_EMAIL");
+      if (self.accounts[email.toLowerCase()]) throw authError("EMAIL_EXISTS");
+      if (password.length < 6) throw authError("WEAK_PASSWORD");
+      var uid = "u-" + Math.random().toString(36).slice(2, 10);
+      self.accounts[email.toLowerCase()] = { uid: uid, password: password };
+      return self.session(email, uid);
+    });
+  };
+  MockAuth.prototype.reset = function (email) {
+    var self = this;
+    return this.later(function () {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw authError("INVALID_EMAIL");
+      self.resets.push(email.toLowerCase());
+      return { email: email };
+    });
+  };
+  MockAuth.prototype.remove = function (idToken) {
+    var self = this;
+    return this.later(function () {
+      var uid = String(idToken).replace("tok-", "");
+      Object.keys(self.accounts).forEach(function (k) { if (self.accounts[k].uid === uid) delete self.accounts[k]; });
+      return {};
+    });
+  };
+  MockAuth.prototype.refresh = function (refreshToken) {
+    var uid = String(refreshToken).replace("ref-", "");
+    return this.later(function () { return { id_token: "tok-" + uid, refresh_token: refreshToken, user_id: uid, expires_in: "3600" }; });
+  };
+
+  var Authn = DEMO ? new MockAuth() : new RestAuth(CONFIG.API_KEY);
+
+  function setAuth(j) {
+    AUTH.uid = j.localId; AUTH.idToken = j.idToken; AUTH.refreshToken = j.refreshToken;
+    AUTH.exp = Date.now() + (parseInt(j.expiresIn, 10) || 3600) * 1000; AUTH.email = j.email || AUTH.email;
+    saveSession();
+  }
+  function clearAuth() { AUTH.uid = AUTH.idToken = AUTH.refreshToken = AUTH.email = null; AUTH.exp = 0; }
+  function saveSession() { try { localStorage.setItem("kfa_session", JSON.stringify({ uid: AUTH.uid, refreshToken: AUTH.refreshToken, email: AUTH.email })); } catch (e) { /* storage blocked */ } }
+  function loadSession() { try { return JSON.parse(localStorage.getItem("kfa_session")); } catch (e) { return null; } }
+  function clearSession() { try { localStorage.removeItem("kfa_session"); } catch (e) { /* ignore */ } }
+
+  // Hand back a valid ID token, refreshing it quietly when it's about to expire.
+  function ensureToken() {
+    if (!AUTH.refreshToken) return Promise.resolve(null);
+    if (AUTH.idToken && Date.now() < AUTH.exp - 60000) return Promise.resolve(AUTH.idToken);
+    return Authn.refresh(AUTH.refreshToken).then(function (j) {
+      AUTH.idToken = j.id_token; AUTH.uid = j.user_id || AUTH.uid; AUTH.refreshToken = j.refresh_token || AUTH.refreshToken;
+      AUTH.exp = Date.now() + (parseInt(j.expires_in, 10) || 3600) * 1000;
+      saveSession();
+      return AUTH.idToken;
+    });
+  }
+
+  /* ---------------- database: real (REST) or demo (in memory, with the same rules as the spec) ---------------- */
+  function RestDb(base) { this.base = base.replace(/\/$/, ""); }
+  RestDb.prototype.req = function (path, opts) {
+    var s = this;
+    return ensureToken().then(function (tok) {
+      var url = s.base + "/" + path + ".json" + (tok ? "?auth=" + encodeURIComponent(tok) : "");
+      return fetch(url, opts).then(function (r) {
+        if (r.status === 401 || r.status === 403) throw denied();
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      });
+    });
+  };
+  RestDb.prototype.get = function (path) { return this.req(path); };
+  RestDb.prototype.put = function (path, value) { return this.req(path, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) }); };
+  RestDb.prototype.remove = function (path) { return this.req(path, { method: "DELETE" }); };
+
+  function MockDb(seed) { this.d = seed; }
+  MockDb.prototype.walk = function (path) {
+    var n = this.d, p = path.split("/");
+    for (var i = 0; i < p.length; i++) { if (n == null || typeof n !== "object") return null; n = n[p[i]]; if (n === undefined) return null; }
+    return n;
+  };
+  MockDb.prototype.later = function (fn) {
+    return new Promise(function (res, rej) { setTimeout(function () { try { res(fn()); } catch (e) { rej(e); } }, 90); });
+  };
+  MockDb.prototype.isMember = function (sid, uid) { return !!uid && this.walk("kamikaze_fa/seasons/" + sid + "/managers/" + uid) != null; };
+  MockDb.prototype.get = function (path) {
+    var self = this;
+    return this.later(function () {
+      var uid = AUTH.uid, m;
+      if ((m = path.match(/^kamikaze_fa\/seasons\/([^/]+)\/(.*)$/))) {
+        var sid = m[1], rest = m[2], q;
+        if ((q = rest.match(/^rounds\/[^/]+$/))) { /* public */ }
+        else if ((q = rest.match(/^ties\/([^/]+)$/))) {
+          var st = self.walk("kamikaze_fa/seasons/" + sid + "/rounds/" + q[1] + "/status");
+          if (!self.isMember(sid, uid) || st == null || st === "draft") throw denied();
+        } else if ((q = rest.match(/^picks\/[^/]+\/([^/]+)$/))) { if (!uid || uid !== q[1]) throw denied(); }
+        else if ((q = rest.match(/^managers\/([^/]+)$/))) { if (!uid || uid !== q[1]) throw denied(); }
+        else throw denied();   // names, joinCode and anything else is admin-only
+      }
+      var v = self.walk(path);
+      return v == null ? null : JSON.parse(JSON.stringify(v));
+    });
+  };
+  MockDb.prototype.put = function (path, value) { return this.write(path, value); };
+  MockDb.prototype.remove = function (path) { return this.write(path, null); };
+  MockDb.prototype.write = function (path, value) {
+    var self = this;
+    return this.later(function () {
+      var uid = AUTH.uid, m, base;
+      if (!uid) throw denied();
+      if ((m = path.match(/^kamikaze_fa\/seasons\/([^/]+)\/names\/([^/]+)$/))) {
+        var cur = self.walk(path);
+        if (!/^[a-z0-9 ]{2,20}$/.test(m[2])) throw denied();
+        if (value === null) { if (cur !== uid) throw denied(); }
+        else if (value !== uid || (cur != null && cur !== uid)) throw denied();
+      } else if ((m = path.match(/^kamikaze_fa\/seasons\/([^/]+)\/managers\/([^/]+)$/))) {
+        base = "kamikaze_fa/seasons/" + m[1] + "/";
+        if (m[2] !== uid || self.walk(path) != null || value === null) throw denied();
+        if (Object.keys(value).some(function (k) { return k !== "name" && k !== "code"; })) throw denied();
+        if (typeof value.name !== "string" || !NAME_OK.test(value.name)) throw denied();
+        if (self.walk(base + "names/" + value.name.toLowerCase()) !== uid) throw denied();
+        if (value.code !== self.walk(base + "joinCode")) throw denied();
+      } else if ((m = path.match(/^kamikaze_fa\/seasons\/([^/]+)\/picks\/([^/]+)\/([^/]+)\/([^/]+)$/))) {
+        base = "kamikaze_fa/seasons/" + m[1] + "/";
+        if (m[3] !== uid || !self.isMember(m[1], uid)) throw denied();
+        if (self.walk(base + "rounds/" + m[2] + "/status") !== "open") throw denied();
+        if (!(Date.now() < self.walk(base + "rounds/" + m[2] + "/locksAt"))) throw denied();
+        if (self.walk(base + "ties/" + m[2] + "/" + m[4]) == null) throw denied();
+        if (value !== null) {
+          if (Object.keys(value).some(function (k) { return k !== "side" && k !== "auto"; })) throw denied();
+          if (value.side !== "home" && value.side !== "away") throw denied();
+          if ("auto" in value && value.auto !== false) throw denied();
+        }
+      } else throw denied();
+      var parts = path.split("/"), node = self.d;
+      for (var i = 0; i < parts.length - 1; i++) { node[parts[i]] = node[parts[i]] || {}; node = node[parts[i]]; }
+      if (value === null) delete node[parts[parts.length - 1]]; else node[parts[parts.length - 1]] = value;
+      return value;
+    });
+  };
+
+  function buildDemoSeed() {
+    var cfg = { maxUses: 2, cap: 30, spread: 17 };
+    var now = Date.now(), DAY = 86400000;
+    function mk(hS, hR, aS, aR, mult, winner) {
+      var ph = chanceOf(hR, aR, cfg.spread), pa = 1 - ph;
+      var t = {
+        home: { club: hS, short: hS, rank: hR, p: ph }, away: { club: aS, short: aS, rank: aR, p: pa },
+        ptsHome: Math.min(1 / ph, cfg.cap) * mult, ptsAway: Math.min(1 / pa, cfg.cap) * mult
+      };
+      if (winner) t.winner = winner;
+      return t;
+    }
+    var U = "u-demo";
+    var mine3 = { t01: "home", t02: "home", t03: "home", t04: "home", t05: "home", t06: "away" };
+    var mine4 = { t01: "home", t02: "away", t03: "away" };
+    function asPicks(o) { var r = {}; Object.keys(o).forEach(function (k) { r[k] = { side: o[k], auto: false }; }); return r; }
+    var r3p = {}, r4p = {}; r3p[U] = asPicks(mine3); r4p[U] = asPicks(mine4);
+    r3p["u-sam"] = asPicks({ t01: "away", t02: "away", t03: "home" });
+    return {
+      kamikaze_fa: { activeSeasonId: "demo", seasons: { demo: {
+        joinCode: "DEMO",
+        names: { "demo manager": U, "sam": "u-sam" },
+        managers: { "u-demo": { name: "Demo Manager", code: "DEMO" }, "u-sam": { name: "Sam", code: "DEMO" } },
+        rounds: {
+          r3: { name: "Round 3", mult: 1, status: "resolved", locksAt: now - 20 * DAY },
+          r4: { name: "Round 4", mult: 1, status: "resolved", locksAt: now - 10 * DAY },
+          r5: { name: "Round 5", mult: 1, status: "open", locksAt: now + 2.5 * DAY },
+          qf: { name: "Quarter-finals", mult: 2, status: "draft", locksAt: now + 20 * DAY },
+          sf: { name: "Semi-finals", mult: 2, status: "draft", locksAt: now + 30 * DAY },
+          f: { name: "Final", mult: 3, status: "draft", locksAt: now + 40 * DAY }
+        },
+        ties: {
+          r3: {
+            t01: mk("Man City", 1, "Bradford", 68, 1, "home"), t02: mk("Newcastle", 9, "Grimsby", 80, 1, "away"),
+            t03: mk("Everton", 14, "Stockport", 55, 1, "home"), t04: mk("Fulham", 12, "Leeds", 13, 1, "away"),
+            t05: mk("Sunderland", 8, "Charlton", 40, 1, "home"), t06: mk("Burnley", 20, "Halifax", 93, 1, "away")
+          },
+          r4: { t01: mk("Man City", 1, "Grimsby", 80, 1, "home"), t02: mk("Everton", 14, "Leeds", 13, 1, "home"), t03: mk("Sunderland", 8, "Halifax", 93, 1, "home") },
+          r5: {
+            t01: mk("Man City", 1, "Everton", 14, 1), t02: mk("Sunderland", 8, "Arsenal", 2, 1),
+            t03: mk("Halifax", 93, "Liverpool", 3, 1), t04: mk("Wrexham", 30, "Aston Villa", 6, 1)
+          }
+        },
+        picks: { r3: r3p, r4: r4p, r5: { "u-demo": {} } }
+      } } },
+      kamikaze_fa_public: { seasons: { demo: {
+        config: cfg,
+        leaderboard: [
+          { name: "Dave", points: 71.4, correct: 9, bestCall: 30 },
+          { name: "Demo Manager", points: 34.3, correct: 5, bestCall: 30 },
+          { name: "Sam", points: 27.1, correct: 7, bestCall: 4.2 },
+          { name: "Priya", points: 12.5, correct: 5, bestCall: 2.8 }
+        ]
+      } } }
+    };
+  }
+
+  var db = DEMO ? new MockDb(buildDemoSeed()) : new RestDb(CONFIG.DB_URL);
+  if (DEMO) window.__kfa = { db: db, auth: Authn };
+
+  /* ---------------- state ---------------- */
+  var S = { sid: null, who: null, cfg: { maxUses: 2, cap: 30, spread: 17 }, rounds: [], view: null, leaderboard: null };
+
+  function P(path) { return "kamikaze_fa/seasons/" + S.sid + "/" + path; }
+  function roundById(id) { return S.rounds.filter(function (r) { return r.id === id; })[0]; }
+  function tieIds(round) { return Object.keys(round.ties || {}).sort(); }
+  function clubOf(tie, side) { return tie[side].club || tie[side].short; }
+
+  /* ---------------- loading ---------------- */
+  function loadRound(rid) {
+    return db.get(P("rounds/" + rid)).then(function (r) {
+      if (!r) return null;
+      var round = { id: rid, name: r.name, mult: r.mult || 1, status: r.status, locksAt: r.locksAt, ties: {}, picks: {} };
+      if (r.status === "draft") return round;
+      return Promise.all([db.get(P("ties/" + rid)), db.get(P("picks/" + rid + "/" + AUTH.uid))]).then(function (x) {
+        round.ties = x[0] || {}; round.picks = x[1] || {};
+        return round;
+      });
+    });
+  }
+
+  function loadApp() {
+    return Promise.all([
+      db.get("kamikaze_fa_public/seasons/" + S.sid + "/config").catch(function () { return null; }),
+      Promise.all(CONFIG.ROUND_IDS.map(loadRound))
+    ]).then(function (x) {
+      if (x[0]) S.cfg = { maxUses: x[0].maxUses || 2, cap: x[0].cap || 30, spread: x[0].spread || 17 };
+      S.rounds = x[1].filter(Boolean);
+      var live = S.rounds.filter(function (r) { return r.status !== "draft"; });
+      var open = live.filter(function (r) { return r.status === "open"; })[0];
+      S.view = (open || live[live.length - 1] || {}).id || null;
+      $("loading").hidden = true; $("authView").hidden = true; $("errorView").hidden = true;
+      $("pickView").hidden = false; $("meChip").hidden = false; $("signOut").hidden = false; $("tabs").hidden = false;
+      $("tabs").querySelector('[data-tab="pick"]').click();
+      renderAll();
+      if (!loadApp.timer) loadApp.timer = setInterval(renderDeadline, 30000);
+    });
+  }
+
+  // Signed in: find out who this account is, then load the game.
+  function enter() {
+    return db.get(P("managers/" + AUTH.uid)).catch(function () { return null; }).then(function (who) {
+      if (!who) { $("loading").hidden = true; return showAuth("finish", "You're signed in, but you haven't joined the game yet."); }
+      S.who = who;
+      return loadApp();
+    });
+  }
+
+  function boot() {
+    if (!DEMO && CONFIG.API_KEY.indexOf("YOUR-WEB-API-KEY") !== -1) {
+      return fail("One setting left", "Add your Firebase Web API key to the API_KEY line at the top of the script. Add ?demo=1 to the address to see the page on demo data meanwhile.");
+    }
+    db.get("kamikaze_fa/activeSeasonId").then(function (sid) {
+      if (!sid) return fail("No season is running", "The admin hasn't started the FA Cup game yet.");
+      S.sid = sid;
+      var sess = loadSession();
+      if (!sess || !sess.refreshToken) { $("loading").hidden = true; return showAuth("signin"); }
+      AUTH.uid = sess.uid; AUTH.refreshToken = sess.refreshToken; AUTH.email = sess.email;
+      return ensureToken().then(enter).catch(function () {
+        clearAuth(); clearSession(); $("loading").hidden = true; showAuth("signin", "Please sign in again.");
+      });
+    }).catch(function () { fail("Couldn't load", "Check your connection and reload the page."); });
+  }
+
+  function fail(title, text) {
+    $("loading").hidden = true; $("pickView").hidden = true; $("authView").hidden = true;
+    var box = $("errorView"); box.hidden = false;
+    box.innerHTML = '<div class="empty"><b>' + esc(title) + "</b>" + esc(text) + "</div>";
+  }
+
+  /* ---------------- sign in, join, reset ---------------- */
+  var authMode = "signin", authDraft = { email: "", name: "" };
+
+  function authMsg(code) {
+    var map = {
+      INVALID_LOGIN_CREDENTIALS: "That email and password don't match. Try again, or use \u201cForgotten your password?\u201d.",
+      INVALID_PASSWORD: "That email and password don't match.", EMAIL_NOT_FOUND: "That email and password don't match.",
+      EMAIL_EXISTS: "There's already an account with that email. Sign in instead, or reset your password.",
+      WEAK_PASSWORD: "Pick a password of at least 6 characters.", INVALID_EMAIL: "That doesn't look like a valid email address.",
+      TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again.", USER_DISABLED: "This account has been switched off. Ask the admin."
+    };
+    return map[code] || "Something went wrong. Check your connection and try again.";
+  }
+
+  function showAuth(mode, note) {
+    authMode = mode;
+    $("pickView").hidden = true; $("errorView").hidden = true; $("authView").hidden = false;
+    $("meChip").hidden = true; $("signOut").hidden = mode !== "finish"; $("tabs").hidden = true;
+    var title = mode === "signin" ? "Sign in" : mode === "join" ? "Join the game" : mode === "reset" ? "Reset your password" : "Finish joining";
+    var pills = mode === "finish" || mode === "reset" ? "" :
+      '<div class="rounds" style="padding:0" role="group"><button type="button" data-mode="signin" aria-pressed="' + (mode === "signin") + '">Sign in</button>' +
+      '<button type="button" data-mode="join" aria-pressed="' + (mode === "join") + '">Join the game</button></div>';
+    var f = "";
+    if (mode === "join" || mode === "finish") f += '<label><span>Your name (shown on the table)</span><input id="fName" maxlength="20" autocomplete="nickname" value="' + esc(authDraft.name) + '"></label>';
+    if (mode !== "finish") f += '<label><span>Email</span><input id="fEmail" type="email" autocomplete="email" inputmode="email" value="' + esc(authDraft.email) + '"></label>';
+    if (mode === "signin" || mode === "join") f += '<label><span>Password' + (mode === "join" ? " (at least 6 characters)" : "") + '</span><input id="fPass" type="password" autocomplete="' + (mode === "join" ? "new-password" : "current-password") + '"></label>';
+    if (mode === "join" || mode === "finish") f += '<label><span>Join code (from the admin)</span><input id="fCode" maxlength="12" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:.2em"></label>';
+    var go = mode === "signin" ? "Sign in" : mode === "join" ? "Join" : mode === "reset" ? "Send reset link" : "Join";
+    var links = mode === "signin" ? '<button type="button" class="linkbtn" data-mode="reset">Forgotten your password?</button>'
+      : mode === "reset" ? '<button type="button" class="linkbtn" data-mode="signin">Back to sign in</button>' : "";
+    $("authView").innerHTML = '<div class="phead"><h2>' + title + "</h2></div><div class=\"adminbox\">" + pills +
+      (mode === "reset" ? '<p style="margin:0;color:var(--muted);font-size:14px">Enter the email you signed up with and we\'ll send you a link to choose a new password. Your picks and history stay exactly as they are.</p>' : "") +
+      f + '<div class="btnrow"><button type="button" class="btn small" id="authGo">' + go + "</button>" + links + "</div>" +
+      '<div class="msg" id="authNote" role="status" aria-live="polite">' + esc(note || "") + "</div></div>";
+  }
+  function authNote(text, ok) { var n = $("authNote"); n.textContent = text; n.style.color = ok ? "var(--go)" : "var(--danger)"; }
+  function val(id) { var el = $(id); return el ? el.value.trim() : ""; }
+  function busy(on) { var b = $("authGo"); if (b) b.disabled = on; }
+
+  // Claim the name, then create the manager record. Undo the name if the join code is wrong.
+  function claim(name, code) {
+    var key = name.toLowerCase();
+    return db.put(P("names/" + key), AUTH.uid).catch(function (e) {
+      if (e && e.denied) throw authError("NAME_TAKEN"); throw e;
+    }).then(function () {
+      return db.put(P("managers/" + AUTH.uid), { name: name, code: code.toUpperCase() }).catch(function (e) {
+        return db.remove(P("names/" + key)).catch(function () {}).then(function () {
+          if (e && e.denied) throw authError("BAD_CODE"); throw e;
+        });
+      });
+    });
+  }
+
+  function submitAuth() {
+    var email = val("fEmail"), pass = $("fPass") ? $("fPass").value : "", name = val("fName"), code = val("fCode");
+    authDraft.email = email || authDraft.email; authDraft.name = name || authDraft.name;
+    if (authMode !== "finish" && !email) return authNote("Enter your email address.");
+    if (authMode === "reset") {
+      busy(true);
+      return Authn.reset(email).catch(function (e) { if (e.code === "INVALID_EMAIL") throw e; }).then(function () {
+        authNote("If there's an account for that address, a reset link is on its way. Check your spam folder too.", true);
+      }).catch(function (e) { authNote(authMsg(e.code)); }).then(function () { busy(false); });
+    }
+    if (authMode === "signin") {
+      if (!pass) return authNote("Enter your password.");
+      busy(true);
+      return Authn.signIn(email, pass).then(function (j) { setAuth(j); return enter(); })
+        .catch(function (e) { authNote(authMsg(e.code)); }).then(function () { busy(false); });
+    }
+    if (!NAME_OK.test(name)) return authNote("Your name needs 2 to 20 letters, numbers or spaces.");
+    if (!code) return authNote("Enter the join code the admin gave you.");
+    if (authMode === "join") {
+      if (pass.length < 6) return authNote(authMsg("WEAK_PASSWORD"));
+      busy(true);
+      return Authn.signUp(email, pass).then(function (j) {
+        setAuth(j);
+        return claim(name, code).then(enter).catch(function (e) {
+          var tok = AUTH.idToken;
+          return Authn.remove(tok).catch(function () {}).then(function () {
+            clearAuth(); clearSession();
+            authNote(e.code === "NAME_TAKEN" ? "That name is already taken. Pick another one." : e.code === "BAD_CODE" ? "That join code isn't right." : authMsg(e.code));
+          });
+        });
+      }).catch(function (e) { authNote(authMsg(e.code)); }).then(function () { busy(false); });
+    }
+    busy(true);   // "finish": already signed in, just needs a name and code
+    return claim(name, code).then(enter).catch(function (e) {
+      authNote(e.code === "NAME_TAKEN" ? "That name is already taken. Pick another one." : e.code === "BAD_CODE" ? "That join code isn't right." : authMsg(e.code));
+    }).then(function () { busy(false); });
+  }
+
+  $("authView").addEventListener("click", function (e) {
+    var m = e.target.closest("[data-mode]");
+    if (m) { authDraft.email = val("fEmail") || authDraft.email; authDraft.name = val("fName") || authDraft.name; showAuth(m.getAttribute("data-mode")); return; }
+    if (e.target.id === "authGo") submitAuth();
+  });
+  $("authView").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); submitAuth(); } });
+
+  $("signOut").addEventListener("click", function () {
+    clearAuth(); clearSession(); S.who = null; S.rounds = []; S.view = null;
+    ["pickView", "tableView", "rulesView"].forEach(function (id) { $(id).hidden = true; });
+    $("signOut").hidden = true; $("meChip").hidden = true; $("tabs").hidden = true; $("msg").textContent = ""; setSave("");
+    showAuth("signin", "You've been signed out.");
+  });
+
+  /* ---------------- uses, scoring, auto-picks ---------------- */
+  function usedBefore(exceptRid) {
+    var used = {};
+    S.rounds.forEach(function (r) {
+      if (r.id === exceptRid || (r.status !== "locked" && r.status !== "resolved")) return;
+      Object.keys(r.picks).forEach(function (tid) {
+        var pk = r.picks[tid], tie = r.ties[tid];
+        if (!tie || !pk || (pk.side !== "home" && pk.side !== "away")) return;
+        var c = clubOf(tie, pk.side); used[c] = (used[c] || 0) + 1;
+      });
+    });
+    return used;
+  }
+  function autoChoice(tie, used) {
+    var first = tie.home.rank <= tie.away.rank ? "home" : "away", other = first === "home" ? "away" : "home";
+    if ((used[clubOf(tie, first)] || 0) < S.cfg.maxUses) return first;
+    if ((used[clubOf(tie, other)] || 0) < S.cfg.maxUses) return other;
+    return null;
+  }
+  function pickResult(round, tid) {
+    var pk = round.picks[tid], tie = round.ties[tid];
+    if (!pk || (pk.side !== "home" && pk.side !== "away")) return { state: "none", pts: 0 };
+    if (!tie.winner) return { state: "wait", pts: 0 };
+    if (pk.side === tie.winner) return { state: "ok", pts: pk.side === "home" ? tie.ptsHome : tie.ptsAway };
+    return { state: "no", pts: 0 };
+  }
+  function roundScore(round) { return tieIds(round).reduce(function (n, t) { return n + pickResult(round, t).pts; }, 0); }
+  function totalScore() { return S.rounds.filter(function (r) { return r.status === "resolved"; }).reduce(function (n, r) { return n + roundScore(r); }, 0); }
+  function isEditable(round) { return round.status === "open" && Date.now() < round.locksAt; }
+
+  /* ---------------- rendering: picks ---------------- */
+  function renderAll() {
+    $("meText").textContent = S.who.name + " · " + fmtPts(totalScore()) + " pts";
+    renderRoundButtons(); renderPick(); renderRules();
+  }
+
+  function renderRoundButtons() {
+    var live = S.rounds.filter(function (r) { return r.status !== "draft"; });
+    $("rounds").innerHTML = live.map(function (r) {
+      return '<button type="button" data-rid="' + esc(r.id) + '" aria-pressed="' + (r.id === S.view) + '">' + esc(r.name) + "</button>";
+    }).join("");
+    $("rounds").hidden = live.length < 2;
+  }
+
+  function fmtWhen(ms) {
+    return new Date(ms).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+  function fmtLeft(ms) {
+    var m = Math.floor(ms / 60000);
+    if (m < 1) return "less than a minute";
+    var d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+    return d ? d + "d " + h + "h" : h ? h + "h " + mm + "m" : mm + "m";
+  }
+  function renderDeadline() {
+    var r = roundById(S.view), el = $("deadline");
+    if (!r) { el.hidden = true; return; }
+    el.hidden = false;
+    var editable = isEditable(r);
+    el.className = "deadline" + (editable ? "" : " locked");
+    if (editable) el.innerHTML = "<span>Picks lock <b>" + esc(fmtWhen(r.locksAt)) + "</b></span><span><b>" + fmtLeft(r.locksAt - Date.now()) + "</b> left</span>";
+    else if (r.status === "open") el.innerHTML = "<span><b>Time's up.</b> Waiting for the admin to lock the round.</span>";
+    else el.innerHTML = "<span><b>" + (r.status === "resolved" ? "Round finished" : "Picks locked") + "</b></span><span>" + esc(fmtWhen(r.locksAt)) + "</span>";
+  }
+
+  function sideHTML(round, tid, key, tie, editable, used) {
+    var me = tie[key], other = tie[key === "home" ? "away" : "home"];
+    var pts = key === "home" ? tie.ptsHome : tie.ptsAway;
+    var base = pts / round.mult;
+    var p = typeof me.p === "number" ? me.p : chanceOf(me.rank, other.rank, S.cfg.spread);
+    var pk = round.picks[tid], picked = !!pk && pk.side === key;
+    var uses = used[clubOf(tie, key)] || 0;
+    var exhausted = editable && uses >= S.cfg.maxUses;
+    var cls = "side " + tierClass(base) + (exhausted ? " used-up" : "") + (editable ? "" : " ro");
+    if (tie.winner) cls += tie.winner === key ? " won" : " lost";
+    if (picked) cls += " picked";
+    var tag = "";
+    if (exhausted) tag = '<span class="tag out">Used up</span>';
+    else if (tie.winner === key) tag = '<span class="tag long">Went through</span>';
+    else if (base >= S.cfg.cap - 1e-9) tag = '<span class="tag cap">Capped at ' + Math.round(S.cfg.cap * round.mult) + "</span>";
+    else if (base >= 8) tag = '<span class="tag long">Long shot</span>';
+    var usesRow = "";
+    if (editable) {
+      var pips = "";
+      for (var i = 0; i < S.cfg.maxUses; i++) {
+        var c = i < uses ? (uses >= S.cfg.maxUses ? "full" : "on") : (i === uses && picked ? "now" : "");
+        pips += "<i" + (c ? ' class="' + c + '"' : "") + "></i>";
+      }
+      var txt = picked ? (uses + 1 >= S.cfg.maxUses ? "final use" : (uses + 1) + " of " + S.cfg.maxUses + " used") : uses + " of " + S.cfg.maxUses + " used";
+      if (exhausted) txt = uses + " of " + S.cfg.maxUses + " used";
+      usesRow = '<span class="usesrow"><span class="upips" aria-hidden="true">' + pips + "</span><span>" + txt + "</span></span>";
+    }
+    var res = "";
+    if (picked && !editable) {
+      var r = pickResult(round, tid);
+      var auto = pk.auto ? " (auto-pick)" : "";
+      res = r.state === "ok" ? '<span class="res ok">Correct, +' + fmtPts(r.pts) + auto + "</span>"
+        : r.state === "no" ? '<span class="res no">Wrong, 0' + auto + "</span>"
+        : '<span class="res wait">Your pick' + auto + "</span>";
+    }
+    return '<button type="button" class="' + cls + '" data-tid="' + esc(tid) + '" data-side="' + key + '" aria-pressed="' + picked + '"' +
+      (exhausted || !editable ? ' aria-disabled="true"' : "") + ">" +
+      '<span class="team">' + esc(me.short || me.club) + "</span>" +
+      '<span class="where">' + rankLabel(me.rank) + "</span>" +
+      '<span class="pts">' + fmtPts(pts) + "<small>pts</small></span>" +
+      '<span class="chance">' + fmtChance(p) + " to go through</span>" + usesRow + tag + res + "</button>";
+  }
+
+  function stripHTML(tie, used, editable) {
+    if (!editable) return "";
+    var mx = S.cfg.maxUses, h = (used[clubOf(tie, "home")] || 0) >= mx, a = (used[clubOf(tie, "away")] || 0) >= mx;
+    if (h && a) return '<div class="strip stuck">Both teams are used up, so there is no pick here. This tie scores 0.</div>';
+    if (h) return '<div class="strip">' + esc(tie.home.short) + " are used up, so " + esc(tie.away.short) + " is your only option.</div>";
+    if (a) return '<div class="strip">' + esc(tie.away.short) + " are used up, so " + esc(tie.home.short) + " is your only option.</div>";
+    return "";
+  }
+
+  function renderPick() {
+    var round = roundById(S.view);
+    if (!round) {
+      $("ties").innerHTML = '<li class="tie"><div class="empty"><b>Nothing open yet</b>The first round appears here once the admin opens it.</div></li>';
+      $("actions").innerHTML = ""; $("deadline").hidden = true; $("tallyBig").textContent = ""; $("sumNum").textContent = "";
+      return;
+    }
+    var editable = isEditable(round), used = usedBefore(round.id), ids = tieIds(round);
+    renderDeadline();
+    var html = "", called = 0, needed = 0, potential = 0;
+    ids.forEach(function (tid) {
+      var tie = round.ties[tid], pk = round.picks[tid];
+      var pickable = (used[clubOf(tie, "home")] || 0) < S.cfg.maxUses || (used[clubOf(tie, "away")] || 0) < S.cfg.maxUses;
+      if (editable) {
+        if (pickable) needed++;
+        if (pk && (pk.side === "home" || pk.side === "away")) { called++; potential += pk.side === "home" ? tie.ptsHome : tie.ptsAway; }
+      }
+      var autoLine = "";
+      if (editable && !(pk && pk.side) && pickable) {
+        var ch = autoChoice(tie, used);
+        if (ch) autoLine = '<div class="autoline">If you leave this, we\'ll pick <b>' + esc(tie[ch].short) + "</b> for you.</div>";
+      }
+      html += '<li class="tie' + (editable && pk ? " done" : "") + '">' + stripHTML(tie, used, editable) + '<div class="sides">' +
+        sideHTML(round, tid, "home", tie, editable, used) + sideHTML(round, tid, "away", tie, editable, used) + "</div>" + autoLine + "</li>";
+    });
+    if (!ids.length) html = '<li class="tie"><div class="empty"><b>No ties yet</b>The admin is still adding this round.</div></li>';
+    $("ties").innerHTML = html;
+
+    if (editable) {
+      $("tallyLab").textContent = "Ties called"; $("sumLab").textContent = "If all correct";
+      $("tallyBig").innerHTML = called + " <span>of " + needed + (needed < ids.length ? " (" + (ids.length - needed) + " can't be picked)" : "") + "</span>";
+      $("sumNum").textContent = potential ? fmtPts(potential) + " pts" : "0";
+      var blanks = ids.filter(function (t) { var pk = round.picks[t]; return !(pk && pk.side) && autoChoice(round.ties[t], used); }).length;
+      $("actions").innerHTML = blanks
+        ? '<button type="button" class="btn secondary" id="fillBtn">Fill the ' + blanks + " blank" + (blanks === 1 ? "" : "s") + " with the safest pick</button>" : "";
+    } else {
+      var allDone = round.status === "resolved";
+      $("tallyLab").textContent = allDone ? "Round score" : "Status";
+      $("tallyBig").innerHTML = allDone ? esc(round.name) : (round.status === "open" ? "Closing" : "Locked");
+      $("sumLab").textContent = allDone ? "You scored" : "Picks made";
+      $("sumNum").textContent = allDone ? fmtPts(roundScore(round)) + " pts" : String(ids.filter(function (t) { return round.picks[t] && round.picks[t].side; }).length);
+      $("actions").innerHTML = "";
+    }
+  }
+
+  /* ---------------- saving picks ---------------- */
+  var saving = 0, queue = [];
+  function setSave(text) { $("saveState").textContent = text; }
+  function pickPath(rid, tid) { return P("picks/" + rid + "/" + AUTH.uid + "/" + tid); }
+
+  function savePick(round, tid, side) {
+    var before = round.picks[tid];
+    if (side) round.picks[tid] = { side: side, auto: false }; else delete round.picks[tid];
+    renderPick(); saving++; setSave("Saving…");
+    var op = side ? db.put(pickPath(round.id, tid), { side: side, auto: false }) : db.remove(pickPath(round.id, tid));
+    return op.then(function () { saving--; if (!saving) setSave("Saved"); return true; }).catch(function (e) {
+      saving--;
+      if (before) round.picks[tid] = before; else delete round.picks[tid];
+      renderPick();
+      setSave("");
+      $("msg").textContent = e && e.denied
+        ? "That pick wasn't saved. The round may have just locked. Reload to see where things stand."
+        : "That pick wasn't saved. Check your connection and try again.";
+      return false;
+    });
+  }
+
+  $("ties").addEventListener("click", function (e) {
+    var b = e.target.closest(".side"); if (!b) return;
+    var round = roundById(S.view); if (!round || !isEditable(round)) return;
+    var tid = b.getAttribute("data-tid"), key = b.getAttribute("data-side"), tie = round.ties[tid];
+    var used = usedBefore(round.id);
+    $("msg").textContent = "";
+    if ((used[clubOf(tie, key)] || 0) >= S.cfg.maxUses) {
+      $("msg").textContent = tie[key].short + " have been backed " + S.cfg.maxUses + " times already and can't be picked again.";
+      return;
+    }
+    var cur = round.picks[tid];
+    savePick(round, tid, cur && cur.side === key ? null : key);
+  });
+
+  $("actions").addEventListener("click", function (e) {
+    if (e.target.id !== "fillBtn") return;
+    var round = roundById(S.view); if (!round || !isEditable(round)) return;
+    var used = usedBefore(round.id), todo = [];
+    tieIds(round).forEach(function (tid) {
+      var pk = round.picks[tid]; if (pk && pk.side) return;
+      var ch = autoChoice(round.ties[tid], used); if (ch) todo.push([tid, ch]);
+    });
+    $("msg").textContent = "";
+    var okCount = 0, i = 0;
+    function worker() {
+      if (i >= todo.length) return Promise.resolve();
+      var job = todo[i++];
+      return savePick(round, job[0], job[1]).then(function (ok) { if (ok) okCount++; return worker(); });
+    }
+    Promise.all([worker(), worker(), worker(), worker()]).then(function () {
+      if (okCount === todo.length) $("msg").textContent = "Filled " + okCount + " tie" + (okCount === 1 ? "" : "s") + ". Tap any of them to change it.";
+    });
+  });
+
+  $("rounds").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    S.view = b.getAttribute("data-rid"); $("msg").textContent = ""; setSave("");
+    renderRoundButtons(); renderPick();
+  });
+
+  /* ---------------- table (leaderboard) ---------------- */
+  function renderTable() {
+    var box = $("tableView");
+    box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Leaderboard</h2></div><div class="empty"><b>Loading</b></div></div>';
+    db.get("kamikaze_fa_public/seasons/" + S.sid + "/leaderboard").then(function (lb) {
+      var rows = lb ? (Array.isArray(lb) ? lb : Object.keys(lb).map(function (k) { return lb[k]; })) : [];
+      rows = rows.filter(Boolean).sort(function (a, b) { return b.points - a.points; });
+      if (!rows.length) { box.querySelector(".empty").innerHTML = "<b>Nothing yet</b>Scores appear here once the first round is scored."; return; }
+      box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Leaderboard</h2></div>' +
+        '<table class="lbtable"><tr><th>#</th><th>Manager</th><th class="n">Points</th><th class="n">Correct</th><th class="n">Best call</th></tr>' +
+        rows.map(function (r, i) {
+          return '<tr class="' + (r.name === S.who.name ? "me" : "") + '"><td class="pos">' + (i + 1) + "</td><td>" + esc(r.name) + '</td><td class="n">' + fmtPts(r.points || 0) +
+            '</td><td class="n">' + (r.correct || 0) + '</td><td class="n">' + (r.bestCall ? fmtPts(r.bestCall) : "-") + "</td></tr>";
+        }).join("") + "</table></div>";
+    }).catch(function () {
+      box.querySelector(".empty").innerHTML = "<b>Couldn't load the table</b>Try again in a moment.";
+    });
+  }
+
+  /* ---------------- rules (worked out from the live settings) ---------------- */
+  function renderRules() {
+    var cfg = S.cfg, gaps = [3, 10, 20, 40, 60];
+    var rows = gaps.map(function (g) {
+      var pf = chanceOf(0, g, cfg.spread), pd = chanceOf(g, 0, cfg.spread);
+      return "<tr><td>" + g + ' places apart</td><td class="num">' + fmtPts(Math.min(1 / pf, cfg.cap)) + " (" + Math.round(pf * 100) + '%)</td><td class="num">' +
+        fmtPts(Math.min(1 / pd, cfg.cap)) + " (" + Math.round(pd * 100) + "%)</td></tr>";
+    }).join("");
+    var mrows = S.rounds.map(function (r) {
+      return "<tr><td>" + esc(r.name) + '</td><td class="num">\u00d7' + r.mult + '</td><td class="num">' + Math.round(cfg.cap * r.mult) + "</td></tr>";
+    }).join("");
+    $("rulesView").innerHTML =
+      '<div class="panel" style="margin-top:18px"><div class="phead"><h2>How it works</h2><span class="hint">Every tie \u00b7 max ' + cfg.maxUses + ' uses per team</span></div><div class="rulesbody">' +
+      "<h3>The basics</h3>" +
+      "<p>Every round, you call <b>every tie</b>: pick which team goes through. A correct call scores points, a wrong call scores <b>0</b>. There are no lives and nobody is eliminated. Most points after the Final wins.</p>" +
+      "<p>The one big rule: you can back any one team a <b>maximum of " + cfg.maxUses + " times</b> across the whole Cup. Spend them wisely.</p>" +
+      "<h3>How points are worked out</h3>" +
+      "<p>Every club is ranked by where it sits in the English pyramid: Premier League 1st to 20th, then the Championship, League One and League Two. Every club below League Two counts as <b>93rd</b>, so two non-league sides meeting each other is a coin flip.</p>" +
+      "<p>Each team gets a <b>chance of going through</b>, shown as a percentage under its name on the pick screen. It comes from one thing only: how far apart the two clubs are in that ranking. Level clubs are 50/50, and the bigger the gap, the surer the higher-ranked club is.</p>" +
+      "<p><b>The lower a team\u2019s chance, the more it pays.</b> To see what a correct pick scores, divide 100 by the percentage:</p>" +
+      '<ul class="ruleslist"><li>98% chance (a big favourite): about <b>1</b> point</li><li>50% chance (a coin flip): about <b>2</b> points</li>' +
+      "<li>25% chance (1 in 4): about <b>4</b> points</li><li>10% chance (1 in 10): about <b>10</b> points</li></ul>" +
+      "<p>The pick screen already shows the points, so you never have to work it out yourself. No pick can pay more than <b>" + cfg.cap + "</b> before the round multiplier.</p>" +
+      '<table class="rulestable"><tr><th></th><th class="num">Favourite</th><th class="num">Underdog</th></tr>' + rows + "</table>" +
+      '<p class="note">Each cell shows the points, then the chance in brackets.</p>' +
+      "<p>These chances are a simple estimate from league positions, not bookmakers\u2019 odds, so they can be wrong. Spotting a tie where the real chance is better than the estimate is where the skill is.</p>" +
+      '<p class="note">The points are locked when the round opens, so what you see on the pick screen is what you get if you\u2019re right.</p>' +
+      "<h3>Round multipliers</h3><p>Points get bigger as the Cup goes on. The cap is applied first, then the multiplier.</p>" +
+      '<table class="rulestable"><tr><th></th><th class="num">Multiplier</th><th class="num">Most a pick can pay</th></tr>' + mrows + "</table>" +
+      '<h3>Team limits <span class="rulestag">' + cfg.maxUses + " per team</span></h3>" +
+      "<p>You can back any one team a <b>maximum of " + cfg.maxUses + " times</b> across the whole Cup. A pick counts as a use when the round locks, whether or not the team goes through. Once a team is used up it\u2019s banned for you, although other managers can still pick it.</p>" +
+      '<ul class="ruleslist"><li>If one team in a tie is used up, you have to back the other.</li><li>If <b>both</b> teams in a tie are used up, there\u2019s no pick and that tie scores 0.</li><li>A team that\u2019s knocked out takes its unused picks with it.</li></ul>' +
+      "<h3>Extra time, penalties and replays</h3><p>A team counts as going through if it wins the tie by any route: in normal time, extra time, on penalties, or in a replay if one is played. Only who progresses matters, never the score.</p>" +
+      "<h3>Missed picks</h3><p>If you haven\u2019t called a tie before the round locks, it\u2019s auto-assigned to the <b>higher-ranked team</b>, and it uses up one of that team\u2019s picks like any other call. It scores exactly as if you\u2019d chosen it.</p>" +
+      '<ul class="ruleslist"><li>If the higher-ranked team is used up, the other team is picked instead.</li><li>If both teams are used up, the tie scores 0.</li><li>If the two clubs are ranked the same (two non-league sides), the home team is picked.</li></ul>' +
+      "<h3>Final tiebreak</h3><p>If managers are level on points after the Final, it\u2019s settled in this order:</p>" +
+      '<ol class="ruleslist"><li>Most correct calls.</li><li>Biggest single payout on a correct call.</li><li>Still tied? The prize is shared. <span class="quip">(Cue the admin: \u201cGoddamit, this is costing me a fortune in shields!\u201d)</span></li></ol>' +
+      "</div></div>";
+  }
+
+  /* ---------------- tabs ---------------- */
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var name = b.getAttribute("data-tab");
+    if (!S.sid || !S.who) return;
+    $("pickView").hidden = name !== "pick"; $("tableView").hidden = name !== "table"; $("rulesView").hidden = name !== "rules";
+    Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function (x) { x.classList.toggle("on", x === b); });
+    if (name === "table") renderTable();
+    window.scrollTo(0, 0);
+  });
+
+  if (DEMO) $("banner").innerHTML = '<div class="demobanner">Demo data. Sign in with <b>demo@example.com</b> / <b>demo1234</b>, or join with the code <b>DEMO</b>. Set <b>DB_URL</b> and <b>API_KEY</b> at the top of the script to connect the real database.</div>';
+  boot();
+})();
+</script>
+</body>
+</html>
