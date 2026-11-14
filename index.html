@@ -326,7 +326,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
     <div class="tally" role="status" aria-live="polite">
       <div>
-        <div class="lab" id="tallyLab">Ties called</div>
+        <div class="lab" id="tallyLab">Ties predicted</div>
         <div class="big" id="tallyBig"></div>
       </div>
       <div class="right">
@@ -1123,7 +1123,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     $("ties").innerHTML = html;
 
     if (editable) {
-      $("tallyLab").textContent = "Ties called"; $("sumLab").textContent = "If all correct";
+      $("tallyLab").textContent = "Ties predicted"; $("sumLab").textContent = "If all correct";
       $("tallyBig").innerHTML = called + " <span>of " + needed + (needed < ids.length ? " (" + (ids.length - needed) + " can't be picked)" : "") + "</span>";
       $("sumNum").textContent = potential ? fmtPts(potential) + " pts" : "0";
       $("actions").innerHTML = "";
@@ -1226,7 +1226,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     $("rulesView").innerHTML =
       '<div class="panel" style="margin-top:18px"><div class="phead"><h2>How it works</h2><span class="hint">Every tie \u00b7 max ' + cfg.maxUses + ' uses per team</span></div><div class="rulesbody">' +
       "<h3>The basics</h3>" +
-      "<p>Every round, you call <b>every tie</b>: pick which team goes through. A correct call scores points, a wrong call scores <b>0</b>. There are no lives and nobody is eliminated. Most points after the Final wins.</p>" +
+      "<p>Every round, you predict <b>every tie</b>: pick which team goes through. A correct prediction scores points, a wrong prediction scores <b>0</b>. There are no lives and nobody is eliminated. Most points after the Final wins.</p>" +
       "<p>The one big rule: you can back any one team a <b>maximum of " + cfg.maxUses + " times</b> across the whole Cup. Spend them wisely.</p>" +
       "<h3>How points are worked out</h3>" +
       "<p>Every club is ranked by where it sits in the English pyramid: Premier League 1st to 20th, then the Championship, League One and League Two. Every club below League Two counts as <b>93rd</b>, so two non-league sides meeting each other is a coin flip.</p>" +
@@ -1250,10 +1250,10 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
         "<li><b>Dark Horse:</b> name one club from outside the Premier League. You get its bonus <b>every time it wins a round</b>, from <b>+1</b> a round for the top of the Championship up to <b>+4</b> a round for a non-league side.</li></ul>" +
         '<p class="note">Each club\u2019s bonus is shown next to its name when you choose, and it is fixed from the league positions on the day Round 3 opens. These picks don\u2019t count towards your ' + cfg.maxUses + " uses of a team, and a pick left blank simply earns nothing.</p>" : "") +
       "<h3>Extra time, penalties and replays</h3><p>A team counts as going through if it wins the tie by any route: in normal time, extra time, on penalties, or in a replay if one is played. Only who progresses matters, never the score.</p>" +
-      "<h3>Missed picks</h3><p>If you haven\u2019t called a tie before the round locks, it\u2019s auto-assigned to the <b>higher-ranked team</b>, and it uses up one of that team\u2019s picks like any other call. It scores exactly as if you\u2019d chosen it.</p>" +
+      "<h3>Missed picks</h3><p>If you haven\u2019t predicted a tie before the round locks, it\u2019s auto-assigned to the <b>higher-ranked team</b>, and it uses up one of that team\u2019s picks like any other prediction. It scores exactly as if you\u2019d chosen it.</p>" +
       '<ul class="ruleslist"><li>If the higher-ranked team is used up, the other team is picked instead.</li><li>If both teams are used up, the tie scores 0.</li><li>If the two clubs are ranked the same (two non-league sides), the home team is picked.</li></ul>' +
       "<h3>Final tiebreak</h3><p>If managers are level on points after the Final, it\u2019s settled in this order:</p>" +
-      '<ol class="ruleslist"><li>Most correct calls.</li><li>Biggest gap: the most league places between the two clubs in a tie where you backed the lower-placed club and it went through.</li><li>Still tied? The prize is shared. <span class="quip">(Cue the admin: \u201cGoddamit, this is costing me a fortune in shields!\u201d)</span></li></ol>' +
+      '<ol class="ruleslist"><li>Most correct predictions.</li><li>Biggest gap: the most league places between the two clubs in a tie where you backed the lower-placed club and it went through.</li><li>Still tied? The prize is shared. <span class="quip">(Cue the admin: \u201cGoddamit, this is costing me a fortune in shields!\u201d)</span></li></ol>' +
       "</div></div>";
   }
 
