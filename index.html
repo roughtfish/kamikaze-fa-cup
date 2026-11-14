@@ -204,6 +204,18 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 .res.ok{color:var(--go)} .res.no{color:var(--danger)} .res.wait{color:var(--faint)}
 .autoline{padding:8px 14px;font-size:13px;color:var(--muted);border-top:1px solid var(--line-soft)}
 .autoline b{color:var(--ink)}
+.sp{margin:14px 0}
+.spbody{padding:12px 16px 14px;display:grid;gap:14px}
+.spf{display:grid;gap:5px}
+.spl{font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:600;color:var(--ink)}
+.spd{font-size:13px;color:var(--muted);line-height:1.4}
+.spf select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:16px}
+.spn{font-size:13px;color:var(--go);min-height:1.3em}
+.sprow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center}
+.sprow .spl{grid-column:1 / -1;color:var(--faint);font-size:11px}
+.sprow .spc{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);min-width:0}
+.sprow .sps{font-family:var(--num);font-size:13px;color:var(--muted);text-align:right}
+.sprow .sps.ok{color:var(--go)} .sprow .sps.no{color:var(--danger)}
 .savestate{font-family:var(--num);font-size:12px;color:var(--faint);min-height:1.2em;text-align:right;margin-top:8px}
 .demobanner{margin:12px 0 0;padding:8px 12px;border:1px dashed var(--warn);border-radius:10px;color:var(--warn);font-size:13px}
 .lbtable{width:100%;border-collapse:collapse}
@@ -323,6 +335,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       </div>
     </div>
 
+    <div id="specials"></div>
     <ul class="ties" id="ties"></ul>
     <div class="savestate" id="saveState" role="status" aria-live="polite"></div>
     <div class="actions" id="actions"></div>
@@ -516,6 +529,10 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
           if (!self.isMember(sid, uid) || st == null || st === "draft") throw denied();
         } else if ((q = rest.match(/^picks\/[^/]+\/([^/]+)$/))) { if (!uid || uid !== q[1]) throw denied(); }
         else if ((q = rest.match(/^managers\/([^/]+)$/))) { if (!uid || uid !== q[1]) throw denied(); }
+        else if (rest === "specials/clubs") {
+          var s3 = self.walk("kamikaze_fa/seasons/" + sid + "/rounds/r3/status");
+          if (!self.isMember(sid, uid) || s3 === "draft") throw denied();
+        } else if ((q = rest.match(/^specials\/picks\/([^/]+)$/))) { if (!uid || uid !== q[1]) throw denied(); }
         else throw denied();   // names, joinCode and anything else is admin-only
       }
       var v = self.walk(path);
@@ -552,6 +569,15 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
           if (value.side !== "home" && value.side !== "away") throw denied();
           if ("auto" in value && value.auto !== false) throw denied();
         }
+      } else if ((m = path.match(/^kamikaze_fa\/seasons\/([^/]+)\/specials\/picks\/([^/]+)\/(cup|dark)$/))) {
+        base = "kamikaze_fa/seasons/" + m[1] + "/";
+        if (m[2] !== uid || !self.isMember(m[1], uid)) throw denied();
+        if (self.walk(base + "rounds/r3/status") !== "open") throw denied();
+        if (!(Date.now() < self.walk(base + "rounds/r3/locksAt"))) throw denied();
+        if (value !== null) {
+          var club = typeof value === "string" ? self.walk(base + "specials/clubs/" + value) : null;
+          if (!club || (m[3] === "dark" && !club.dark)) throw denied();
+        }
       } else throw denied();
       var parts = path.split("/"), node = self.d;
       for (var i = 0; i < parts.length - 1; i++) { node[parts[i]] = node[parts[i]] || {}; node = node[parts[i]]; }
@@ -561,7 +587,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   };
 
   function buildDemoSeed() {
-    var cfg = { maxUses: 2, cap: 30, spread: 17 };
+    var cfg = { maxUses: 2, cap: 30, spread: 17, specials: true };
     var now = Date.now(), DAY = 86400000;
     function demoCrest(name) {
       if (name === "Everton") return "https://crests.invalid/broken.png";           // a picture that won't load, to show the fallback
@@ -578,12 +604,28 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       if (winner) t.winner = winner;
       return t;
     }
+    // Season-pick bonuses for the demo. In the real game the admin console works these out and freezes them.
+    function demoClubs(ties) {
+      var out = {};
+      Object.keys(ties).forEach(function (t) { ["home", "away"].forEach(function (k) {
+        var sd = ties[t][k], c = { club: sd.club, short: sd.short, rank: sd.rank, cup: Math.min(30, Math.round(3 * Math.exp((sd.rank - 1) / 5.5))) };
+        if (sd.crest) c.crest = sd.crest;
+        if (sd.rank > 20) c.dark = Math.round(2 / Math.max(0.95 - 0.0095 * (sd.rank - 21), 0.25)) / 2;
+        out[sd.club] = c;
+      }); });
+      return out;
+    }
     var U = "u-demo";
     var mine3 = { t01: "home", t02: "home", t03: "home", t04: "home", t05: "home", t06: "away" };
     var mine4 = { t01: "home", t02: "away", t03: "away" };
     function asPicks(o) { var r = {}; Object.keys(o).forEach(function (k) { r[k] = { side: o[k], auto: false }; }); return r; }
     var r3p = {}, r4p = {}; r3p[U] = asPicks(mine3); r4p[U] = asPicks(mine4);
     r3p["u-sam"] = asPicks({ t01: "away", t02: "away", t03: "home" });
+    var r3ties = {
+      t01: mk("Man City", 1, "Bradford", 68, 1, "home"), t02: mk("Newcastle", 9, "Grimsby", 80, 1, "away"),
+      t03: mk("Everton", 14, "Stockport", 55, 1, "home"), t04: mk("Fulham", 12, "Leeds", 13, 1, "away"),
+      t05: mk("Sunderland", 8, "Charlton", 40, 1, "home"), t06: mk("Burnley", 20, "Halifax", 93, 1, "away")
+    };
     return {
       kamikaze_fa: { activeSeasonId: "demo", seasons: { demo: {
         joinCode: "DEMO",
@@ -598,26 +640,23 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
           f: { name: "Final", mult: 3, status: "draft", locksAt: now + 40 * DAY }
         },
         ties: {
-          r3: {
-            t01: mk("Man City", 1, "Bradford", 68, 1, "home"), t02: mk("Newcastle", 9, "Grimsby", 80, 1, "away"),
-            t03: mk("Everton", 14, "Stockport", 55, 1, "home"), t04: mk("Fulham", 12, "Leeds", 13, 1, "away"),
-            t05: mk("Sunderland", 8, "Charlton", 40, 1, "home"), t06: mk("Burnley", 20, "Halifax", 93, 1, "away")
-          },
+          r3: r3ties,
           r4: { t01: mk("Man City", 1, "Grimsby", 80, 1, "home"), t02: mk("Everton", 14, "Leeds", 13, 1, "home"), t03: mk("Sunderland", 8, "Halifax", 93, 1, "home") },
           r5: {
             t01: mk("Man City", 1, "Everton", 14, 1), t02: mk("Sunderland", 8, "Arsenal", 2, 1),
             t03: mk("Halifax", 93, "Liverpool", 3, 1), t04: mk("Wrexham", 30, "Aston Villa", 6, 1)
           }
         },
-        picks: { r3: r3p, r4: r4p, r5: { "u-demo": {} } }
+        picks: { r3: r3p, r4: r4p, r5: { "u-demo": {} } },
+        specials: { clubs: demoClubs(r3ties), picks: { "u-demo": { cup: "Man City", dark: "Halifax" }, "u-sam": { cup: "Sunderland" } } }
       } } },
       kamikaze_fa_public: { seasons: { demo: {
         config: cfg,
         leaderboard: [
-          { name: "Dave", points: 71.4, correct: 9, bestGap: 73, bestGapClub: "Grimsby", rounds: { r3: 45.0, r4: 26.4 } },
-          { name: "Demo Manager", points: 34.3, correct: 5, bestGap: 25, bestGapClub: "Halifax", rounds: { r3: 33.3, r4: 1.0 } },
-          { name: "Sam", points: 27.1, correct: 7, bestGap: 12, bestGapClub: "Leeds", rounds: { r3: 12.7, r4: 14.4 } },
-          { name: "Priya", points: 12.5, correct: 5, bestGap: 0, bestGapClub: "", rounds: { r3: 7.0, r4: 5.5 } }
+          { name: "Dave", points: 73.4, correct: 9, bestGap: 73, bestGapClub: "Grimsby", rounds: { r3: 45.0, r4: 26.4 }, cup: 0, cupClub: "Arsenal", dark: 2, darkClub: "Grimsby" },
+          { name: "Demo Manager", points: 38.3, correct: 5, bestGap: 25, bestGapClub: "Halifax", rounds: { r3: 33.3, r4: 1.0 }, cup: 0, cupClub: "Man City", dark: 4, darkClub: "Halifax" },
+          { name: "Sam", points: 27.1, correct: 7, bestGap: 12, bestGapClub: "Leeds", rounds: { r3: 12.7, r4: 14.4 }, cup: 0, cupClub: "Sunderland", dark: 0, darkClub: "" },
+          { name: "Priya", points: 12.5, correct: 5, bestGap: 0, bestGapClub: "", rounds: { r3: 7.0, r4: 5.5 }, cup: 0, cupClub: "Liverpool", dark: 0, darkClub: "Bradford" }
         ]
       } } }
     };
@@ -627,7 +666,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   if (DEMO) window.__kfa = { db: db, auth: Authn };
 
   /* ---------------- state ---------------- */
-  var S = { sid: null, who: null, cfg: { maxUses: 2, cap: 30, spread: 17 }, rounds: [], view: null, leaderboard: null };
+  var S = { sid: null, who: null, cfg: { maxUses: 3, cap: 30, spread: 30, specials: false }, rounds: [], view: null, leaderboard: null, sp: null };
 
   function P(path) { return "kamikaze_fa/seasons/" + S.sid + "/" + path; }
   function roundById(id) { return S.rounds.filter(function (r) { return r.id === id; })[0]; }
@@ -658,8 +697,16 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       db.get("kamikaze_fa_public/seasons/" + S.sid + "/config").catch(function () { return null; }),
       Promise.all(CONFIG.ROUND_IDS.map(loadRound))
     ]).then(function (x) {
-      if (x[0]) S.cfg = { maxUses: x[0].maxUses || 2, cap: x[0].cap || 30, spread: x[0].spread || 17 };
+      if (x[0]) S.cfg = { maxUses: x[0].maxUses || 3, cap: x[0].cap || 30, spread: x[0].spread || 30, specials: !!x[0].specials };
       S.rounds = x[1].filter(Boolean);
+      // Season picks (Cup Winner and Dark Horse): the club list is fixed when Round 3 opens.
+      var r3 = roundById("r3");
+      if (!S.cfg.specials || !r3 || r3.status === "draft") { S.sp = null; return null; }
+      return Promise.all([
+        db.get(P("specials/clubs")).catch(function () { return null; }),
+        db.get(P("specials/picks/" + AUTH.uid)).catch(function () { return null; })
+      ]).then(function (y) { S.sp = y[0] ? { clubs: y[0], picks: y[1] || {} } : null; });
+    }).then(function () {
       S.sig = sigOf(S.rounds);
       var live = S.rounds.filter(function (r) { return r.status !== "draft"; });
       var open = live.filter(function (r) { return r.status === "open"; })[0];
@@ -869,7 +916,95 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     return { state: "no", pts: 0 };
   }
   function roundScore(round) { return tieIds(round).reduce(function (n, t) { return n + pickResult(round, t).pts; }, 0); }
-  function totalScore() { return S.rounds.filter(function (r) { return r.status === "resolved"; }).reduce(function (n, r) { return n + roundScore(r); }, 0); }
+  function totalScore() { return S.rounds.filter(function (r) { return r.status === "resolved"; }).reduce(function (n, r) { return n + roundScore(r); }, 0) + specialsScore().total; }
+
+  /* ---------------- season picks: Cup Winner and Dark Horse ---------------- */
+  function spKey(sd) { return sd.key || sd.club || sd.short; }
+  function spLocked() { var r3 = roundById("r3"); return !!r3 && (r3.status === "locked" || r3.status === "resolved"); }
+  function fmtBonus(x) { return Number.isInteger(x) ? String(x) : Number(x).toFixed(1); }
+  // How far a club has gone in finished rounds.
+  function clubRun(key) {
+    var wins = 0, champion = false, out = false;
+    S.rounds.forEach(function (r) {
+      if (r.status !== "resolved") return;
+      tieIds(r).forEach(function (tid) {
+        var t = r.ties[tid], side = spKey(t.home) === key ? "home" : spKey(t.away) === key ? "away" : null;
+        if (!side || !t.winner) return;
+        if (t.winner === side) { wins++; if (r.id === "f") champion = true; } else out = true;
+      });
+    });
+    return { wins: wins, champion: champion, out: out };
+  }
+  // Season picks only count once Round 3 has locked, the same as on the leaderboard.
+  function specialsScore() {
+    var res = { cup: 0, dark: 0, total: 0 };
+    if (!S.sp || !spLocked()) return res;
+    var c = S.sp.clubs[S.sp.picks.cup], d = S.sp.clubs[S.sp.picks.dark];
+    if (c && clubRun(S.sp.picks.cup).champion) res.cup = c.cup;
+    if (d && d.dark) res.dark = d.dark * clubRun(S.sp.picks.dark).wins;
+    res.total = res.cup + res.dark;
+    return res;
+  }
+  function spOptions(kind, cur) {
+    var clubs = S.sp.clubs;
+    var keys = Object.keys(clubs).filter(function (k) { return kind === "cup" || clubs[k].dark; })
+      .sort(function (a, b) { return clubs[a].rank - clubs[b].rank || String(clubs[a].short).localeCompare(String(clubs[b].short)); });
+    return '<option value="">Choose a club</option>' + keys.map(function (k) {
+      return '<option value="' + esc(k) + '"' + (k === cur ? " selected" : "") + ">" + esc(clubs[k].short) + " \u00b7 +" + fmtBonus(clubs[k][kind]) + (kind === "dark" ? " a round" : "") + "</option>";
+    }).join("");
+  }
+  function renderSpecials() {
+    var box = $("specials"), r3 = roundById("r3");
+    if (!S.sp || !r3) { box.innerHTML = ""; return; }
+    var clubs = S.sp.clubs, mine = S.sp.picks, c = clubs[mine.cup], d = clubs[mine.dark];
+    if (isEditable(r3)) {
+      if (S.view !== "r3") { box.innerHTML = ""; return; }
+      box.innerHTML = '<div class="panel sp"><div class="phead"><h2>Season picks</h2><span class="hint">Lock with Round 3</span></div><div class="spbody">' +
+        '<label class="spf"><span class="spl">Cup Winner</span><span class="spd">Who will win the Cup? You get the bonus if they do. The less likely the club, the bigger the bonus.</span>' +
+        '<select data-sp="cup" aria-label="Cup Winner">' + spOptions("cup", mine.cup) + "</select>" +
+        '<span class="spn">' + (c ? esc(c.short) + " (" + rankLabel(c.rank) + "): +" + fmtBonus(c.cup) + " if they win the Cup." : "") + "</span></label>" +
+        '<label class="spf"><span class="spl">Dark Horse</span><span class="spd">A club from outside the Premier League. You get its bonus every time it wins a round.</span>' +
+        '<select data-sp="dark" aria-label="Dark Horse">' + spOptions("dark", mine.dark) + "</select>" +
+        '<span class="spn">' + (d ? esc(d.short) + " (" + rankLabel(d.rank) + "): +" + fmtBonus(d.dark) + " for every round they win." : "") + "</span></label>" +
+        "</div></div>";
+      return;
+    }
+    var locked = spLocked();
+    function row(label, club, text, cls) {
+      return '<div class="sprow"><span class="spl">' + label + '</span><span class="spc">' + (club ? crestHTML(club, true) + "<span>" + esc(club.short) + "</span>" : '<span style="color:var(--muted);font-weight:400">No pick made</span>') +
+        '</span><span class="sps' + (cls ? " " + cls : "") + '">' + text + "</span></div>";
+    }
+    var cupText = "", cupCls = "", darkText = "", darkCls = "";
+    if (c) {
+      var cr = clubRun(mine.cup);
+      if (cr.champion) { cupText = "Won the Cup, +" + fmtBonus(c.cup); cupCls = "ok"; }
+      else if (cr.out) { cupText = "Knocked out, 0"; cupCls = "no"; }
+      else cupText = "+" + fmtBonus(c.cup) + " if they win the Cup";
+    }
+    if (d) {
+      var dr = clubRun(mine.dark);
+      if (dr.wins) { darkText = "+" + fmtPts(d.dark * dr.wins) + " from " + dr.wins + (dr.wins === 1 ? " round won" : " rounds won") + (dr.out ? ", now out" : ""); darkCls = "ok"; }
+      else if (dr.out) { darkText = "Knocked out, 0"; darkCls = "no"; }
+      else darkText = "+" + fmtBonus(d.dark) + " for every round won";
+    }
+    box.innerHTML = '<div class="panel sp"><div class="phead"><h2>Season picks</h2><span class="hint">' + (locked ? "Locked with Round 3" : "Closing") + '</span></div><div class="spbody">' +
+      row("Cup Winner", c, cupText, cupCls) + row("Dark Horse", d, darkText, darkCls) + "</div></div>";
+  }
+  function saveSpecial(kind, key) {
+    var r3 = roundById("r3"); if (!S.sp || !r3 || !isEditable(r3)) return;
+    var before = S.sp.picks[kind], path = P("specials/picks/" + AUTH.uid + "/" + kind);
+    if (key) S.sp.picks[kind] = key; else delete S.sp.picks[kind];
+    renderSpecials(); saving++; setSave("Saving\u2026"); $("msg").textContent = "";
+    var sel = $("specials").querySelector('[data-sp="' + kind + '"]'); if (sel) sel.focus();
+    (key ? db.put(path, key) : db.remove(path)).then(function () { saving--; if (!saving) setSave("Saved"); }).catch(function (e) {
+      saving--;
+      if (before) S.sp.picks[kind] = before; else delete S.sp.picks[kind];
+      renderSpecials(); setSave("");
+      $("msg").textContent = e && e.denied
+        ? "That season pick wasn't saved. Round 3 may have just locked. Reload to see where things stand."
+        : "That season pick wasn't saved. Check your connection and try again.";
+    });
+  }
   function isEditable(round) { return round.status === "open" && Date.now() < round.locksAt; }
 
   /* ---------------- rendering: picks ---------------- */
@@ -960,6 +1095,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
   function renderPick() {
     var round = roundById(S.view);
+    renderSpecials();
     if (!round) {
       $("ties").innerHTML = '<li class="tie"><div class="empty"><b>Nothing open yet</b>The first round appears here once the admin opens it.</div></li>';
       $("actions").innerHTML = ""; $("deadline").hidden = true; $("tallyBig").textContent = ""; $("sumNum").textContent = "";
@@ -1037,6 +1173,11 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     savePick(round, tid, cur && cur.side === key ? null : key);
   });
 
+  $("specials").addEventListener("change", function (e) {
+    var kind = e.target.getAttribute && e.target.getAttribute("data-sp");
+    if (kind === "cup" || kind === "dark") saveSpecial(kind, e.target.value);
+  });
+
   $("rounds").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
     S.view = b.getAttribute("data-rid"); $("msg").textContent = ""; setSave("");
@@ -1055,14 +1196,17 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       var LB_LABEL = { r3: "R3", r4: "R4", r5: "R5", qf: "QF", sf: "SF", f: "Final" };
       var ids = CONFIG.ROUND_IDS.filter(function (id) { return rows.some(function (r) { return r.rounds && r.rounds[id] !== undefined; }); });
       var top = {}; ids.forEach(function (id) { top[id] = Math.max.apply(null, rows.map(function (r) { return (r.rounds && r.rounds[id]) || 0; })); });
+      var sp = rows.some(function (r) { return r.cupClub || r.darkClub; });
+      function spTd(pts, club) { return '<td class="n' + (pts ? " top" : "") + '">' + (club ? (pts ? fmt1(pts) : "0") + "<small>" + esc(club) + "</small>" : "-") + "</td>"; }
       box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Leaderboard</h2>' + (ids.length ? '<span class="hint">Points in each finished round</span>' : "") + '</div><div class="lbwrap">' +
         '<table class="lbtable"><tr><th class="sticky s1">#</th><th class="sticky s2">Manager</th><th class="n total">Total</th>' +
-        ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + '<th class="n">Correct</th><th class="n">Biggest gap</th></tr>' +
+        ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + (sp ? '<th class="n">Cup Winner</th><th class="n">Dark Horse</th>' : "") + '<th class="n">Correct</th><th class="n">Biggest gap</th></tr>' +
         rows.map(function (r, i) {
           return '<tr class="' + (r.name === S.who.name ? "me" : "") + '"><td class="pos sticky s1">' + (i + 1) + '</td><td class="sticky s2">' + esc(r.name) + '</td><td class="n total">' + fmt1(r.points || 0) + "</td>" +
             ids.map(function (id) { var v = (r.rounds && r.rounds[id]) || 0; return '<td class="n' + (v > 0 && v === top[id] ? " top" : "") + '">' + (v ? fmt1(v) : "0") + "</td>"; }).join("") +
+            (sp ? spTd(r.cup, r.cupClub) + spTd(r.dark, r.darkClub) : "") +
             '<td class="n">' + (r.correct || 0) + '</td><td class="n">' + (r.bestGap ? r.bestGap + "<small>" + esc(r.bestGapClub || "") + "</small>" : "-") + "</td></tr>";
-        }).join("") + '</table></div><p class="hint" style="padding:10px 16px 14px;margin:0">Biggest gap: the most league places between the two clubs in a tie where you backed the lower-placed club and it went through.</p></div>';
+        }).join("") + '</table></div><p class="hint" style="padding:10px 16px 14px;margin:0">Biggest gap: the most league places between the two clubs in a tie where you backed the lower-placed club and it went through.' + (sp ? " Cup Winner and Dark Horse show each manager\u2019s season picks and the bonus points they have earned so far." : "") + "</p></div>";
     }).catch(function () {
       box.querySelector(".empty").innerHTML = "<b>Couldn't load the table</b>Try again in a moment.";
     });
@@ -1100,6 +1244,11 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       '<h3>Team limits <span class="rulestag">' + cfg.maxUses + " per team</span></h3>" +
       "<p>You can back any one team a <b>maximum of " + cfg.maxUses + " times</b> across the whole Cup. A pick counts as a use when the round locks, whether or not the team goes through. Once a team is used up it\u2019s banned for you, although other managers can still pick it.</p>" +
       '<ul class="ruleslist"><li>If one team in a tie is used up, you have to back the other.</li><li>If <b>both</b> teams in a tie are used up, there\u2019s no pick and that tie scores 0.</li><li>A team that\u2019s knocked out takes its unused picks with it.</li></ul>' +
+      (cfg.specials ? "<h3>Season picks</h3>" +
+        "<p>Before Round 3 locks, you also make two picks that last the whole Cup. They can\u2019t be changed once Round 3 locks, and other managers can\u2019t see them until then.</p>" +
+        '<ul class="ruleslist"><li><b>Cup Winner:</b> name the club you think will win the Cup. If it does, you get its bonus. The bonus runs from <b>+3</b> for the league leaders up to <b>+30</b> for a long shot.</li>' +
+        "<li><b>Dark Horse:</b> name one club from outside the Premier League. You get its bonus <b>every time it wins a round</b>, from <b>+1</b> a round for the top of the Championship up to <b>+4</b> a round for a non-league side.</li></ul>" +
+        '<p class="note">Each club\u2019s bonus is shown next to its name when you choose, and it is fixed from the league positions on the day Round 3 opens. These picks don\u2019t count towards your ' + cfg.maxUses + " uses of a team, and a pick left blank simply earns nothing.</p>" : "") +
       "<h3>Extra time, penalties and replays</h3><p>A team counts as going through if it wins the tie by any route: in normal time, extra time, on penalties, or in a replay if one is played. Only who progresses matters, never the score.</p>" +
       "<h3>Missed picks</h3><p>If you haven\u2019t called a tie before the round locks, it\u2019s auto-assigned to the <b>higher-ranked team</b>, and it uses up one of that team\u2019s picks like any other call. It scores exactly as if you\u2019d chosen it.</p>" +
       '<ul class="ruleslist"><li>If the higher-ranked team is used up, the other team is picked instead.</li><li>If both teams are used up, the tie scores 0.</li><li>If the two clubs are ranked the same (two non-league sides), the home team is picked.</li></ul>' +

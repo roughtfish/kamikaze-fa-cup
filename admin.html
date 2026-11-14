@@ -349,7 +349,8 @@ nav.tabs button{padding:10px 11px}
     { id: "r3", name: "Round 3", mult: 1, ties: 32 }, { id: "r4", name: "Round 4", mult: 1, ties: 16 }, { id: "r5", name: "Round 5", mult: 1, ties: 8 },
     { id: "qf", name: "Quarter-finals", mult: 1.5, ties: 4 }, { id: "sf", name: "Semi-finals", mult: 1.5, ties: 2 }, { id: "f", name: "Final", mult: 2, ties: 1 }
   ];
-  var DEFAULT_CFG = { maxUses: 3, cap: 30, spread: 30 };
+  var DEFAULT_CFG = { maxUses: 3, cap: 30, spread: 30, specials: true };
+  var ROUND_ORDER = ROUND_DEFS.map(function (d) { return d.id; });
 
   var params = new URLSearchParams(location.search);
   var DEMO = params.get("demo") === "1";
@@ -483,8 +484,53 @@ nav.tabs button{padding:10px 11px}
       return { pts: pts, correct: correct, best: best, upset: upset, upsetClub: upsetClub };
     },
 
+    /* ---- Season picks: Cup Winner and Dark Horse. Both scales are frozen when Round 3 opens. ---- */
+    sideKey: function (sd) { return sd.key || clubKey(sd.club || sd.short); },
+    // Cup Winner: paid once if the club wins the Cup. Small for the title favourites, capped at 30 for long shots.
+    cupBonus: function (rank) { return Math.min(30, Math.round(3 * Math.exp((rank - 1) / 5.5))); },
+    // Dark Horse: paid for every round the club wins. Clubs outside the Premier League only; rounded to halves.
+    darkBonus: function (rank) { return rank <= 20 ? null : Math.round(2 / Math.max(0.95 - 0.0095 * (rank - 21), 0.25)) / 2; },
+    // Every club in the Round 3 draw with its frozen bonuses.
+    specialClubs: function (ties) {
+      var out = {};
+      Logic.tieIds(ties).forEach(function (tid) {
+        ["home", "away"].forEach(function (k) {
+          var sd = ties[tid][k], c = { club: sd.club || sd.short, short: sd.short || sd.club, rank: sd.rank, cup: Logic.cupBonus(sd.rank) };
+          if (sd.crest) c.crest = sd.crest;
+          var d = Logic.darkBonus(sd.rank); if (d) c.dark = d;
+          out[Logic.sideKey(sd)] = c;
+        });
+      });
+      return out;
+    },
+    // How far a club has gone in finished rounds: rounds won, and whether it won the Final.
+    clubRun: function (season, key) {
+      var wins = 0, champion = false, out = false;
+      ROUND_ORDER.forEach(function (rid) {
+        var r = (season.rounds || {})[rid]; if (!r || r.status !== "resolved") return;
+        var ties = (season.ties || {})[rid] || {};
+        Object.keys(ties).forEach(function (tid) {
+          var t = ties[tid], side = Logic.sideKey(t.home) === key ? "home" : Logic.sideKey(t.away) === key ? "away" : null;
+          if (!side || !t.winner) return;
+          if (t.winner === side) { wins++; if (rid === "f") champion = true; } else out = true;
+        });
+      });
+      return { wins: wins, champion: champion, out: out };
+    },
+    // One manager's season-pick points so far.
+    specialsFor: function (season, uid) {
+      var res = { cup: 0, dark: 0, cupClub: "", darkClub: "" };
+      var sp = season.specials || {}, clubs = sp.clubs || {}, mine = (sp.picks || {})[uid] || {};
+      if (!(season.config || {}).specials) return res;
+      var c = clubs[mine.cup], d = clubs[mine.dark];
+      if (c) { res.cupClub = c.short; if (Logic.clubRun(season, mine.cup).champion) res.cup = c.cup; }
+      if (d && d.dark) { res.darkClub = d.short; res.dark = round2(d.dark * Logic.clubRun(season, mine.dark).wins); }
+      return res;
+    },
+
     // Leaderboard from resolved rounds only. Ties broken by correct calls, then best call.
     leaderboard: function (season) {
+      var r3 = (season.rounds || {}).r3 || {}, showSpecials = !!(season.config || {}).specials && (r3.status === "locked" || r3.status === "resolved");
       var rows = Object.keys(season.managers || {}).map(function (uid) {
         var row = { name: season.managers[uid].name, points: 0, correct: 0, bestCall: 0, bestGap: 0, bestGapClub: "", rounds: {} };
         Object.keys(season.rounds || {}).forEach(function (rid) {
@@ -494,6 +540,11 @@ nav.tabs button{padding:10px 11px}
           if (r.upset > row.bestGap) { row.bestGap = r.upset; row.bestGapClub = r.upsetClub; }
           row.rounds[rid] = round2(r.pts);
         });
+        if (showSpecials) {            // season picks stay private until Round 3 has locked
+          var sp = Logic.specialsFor(season, uid);
+          row.cup = sp.cup; row.dark = sp.dark; row.cupClub = sp.cupClub; row.darkClub = sp.darkClub;
+          row.points += sp.cup + sp.dark;
+        }
         row.points = round2(row.points); row.bestCall = round2(row.bestCall);
         return row;
       });
@@ -856,6 +907,8 @@ nav.tabs button{padding:10px 11px}
       '<div class="cols3"><label><span>Uses per team</span><input id="sMax" type="number" min="1" max="5" value="' + c.maxUses + '"></label>' +
       '<label><span>Points cap</span><input id="sCap" type="number" min="5" max="100" value="' + c.cap + '"></label>' +
       '<label><span>Spread</span><input id="sSpread" type="number" min="5" max="40" value="' + c.spread + '"></label></div>' +
+      '<label style="display:flex;align-items:center;gap:10px;color:var(--ink)"><input id="sSpecials" type="checkbox" style="width:20px;height:20px;padding:0;flex:0 0 auto;accent-color:var(--go)"' + (c.specials ? " checked" : "") + (has && (rounds().r3 || {}).status && rounds().r3.status !== "draft" ? " disabled" : "") + '><span>Season picks: Cup Winner and Dark Horse</span></label>' +
+      '<p class="hint" style="margin:0">With season picks on, each player names a Cup Winner and a Dark Horse before Round 3 locks. The bonus for every club is fixed when you open Round 3, so this can\'t be changed after that.</p>' +
       '<p class="hint" style="margin:0">Uses per team, the cap and the spread are the numbers on the Rules tab. Change them before the first round opens. After that they change how later rounds are scored, so leave them.</p>' +
       '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Round</th><th class="num">Multiplier</th><th class="pl">Status</th></tr>' + mrows + "</table>" +
       '<div class="btnrow"><button type="button" class="btn small" id="sSave">' + (has ? "Save changes" : "Create the season") + "</button>" +
@@ -866,11 +919,11 @@ nav.tabs button{padding:10px 11px}
 
   function saveSeason() {
     var id = ($("sId").value || "").trim(), code = ($("sCode").value || "").trim().toUpperCase();
-    var c = { maxUses: parseInt($("sMax").value, 10), cap: parseFloat($("sCap").value), spread: parseFloat($("sSpread").value) };
+    var c = { maxUses: parseInt($("sMax").value, 10), cap: parseFloat($("sCap").value), spread: parseFloat($("sSpread").value), specials: !!$("sSpecials").checked };
     if (!/^[A-Za-z0-9]{2,20}$/.test(id)) return note("The season ID needs 2 to 20 letters or numbers.", "bad");
     if (!/^[A-Z0-9]{3,12}$/.test(code)) return note("The join code needs 3 to 12 capital letters or numbers.", "bad");
     if (!(c.maxUses >= 1 && c.cap >= 5 && c.spread >= 5)) return note("Check the numbers: uses at least 1, cap at least 5, spread at least 5.", "bad");
-    var isNew = !S.sid || S.newSeason, base = "kamikaze_fa/seasons/" + id, updates = { joinCode: code, config: c }, pub = { maxUses: c.maxUses, cap: c.cap, spread: c.spread };
+    var isNew = !S.sid || S.newSeason, base = "kamikaze_fa/seasons/" + id, updates = { joinCode: code, config: c }, pub = { maxUses: c.maxUses, cap: c.cap, spread: c.spread, specials: c.specials };
     ROUND_DEFS.forEach(function (d) {
       var existing = isNew ? null : ((S.season.rounds || {})[d.id]);
       var input = document.querySelector('[data-mult="' + d.id + '"]'), mult = input ? parseFloat(input.value) || d.mult : d.mult;
@@ -1202,7 +1255,7 @@ nav.tabs button{padding:10px 11px}
         '</table></div><div class="adminbox"><div class="btnrow"><button type="button" class="btn small secondary" id="dRefresh">Refresh positions from the tables</button><button type="button" class="btn small secondary" id="dClear">Clear the draw</button></div></div></div>' : "";
     var when = ids.length ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Open the round</h2><span class="hint">' + esc(r.name) + " · ×" + r.mult + "</span></div>" +
       '<div class="adminbox"><label><span>Picks lock at</span><input id="oWhen" type="datetime-local"></label>' +
-      '<p class="hint" style="margin:0">Opening freezes each tie\'s chance and points using spread ' + c.spread + ", cap " + c.cap + " and the ×" + r.mult + " multiplier. Players can then see the ties and make picks.</p>" +
+      '<p class="hint" style="margin:0">Opening freezes each tie\'s chance and points using spread ' + c.spread + ", cap " + c.cap + " and the ×" + r.mult + " multiplier. Players can then see the ties and make picks." + (rid === "r3" && c.specials ? " It also fixes the Cup Winner and Dark Horse bonus for every club in the draw, so load the latest positions first." : "") + "</p>" +
       '<div class="btnrow"><button type="button" class="btn small" id="oGo">Open ' + esc(r.name) + "</button></div></div></div>" : "";
     return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>Enter the draw</h2><span class="hint">' + esc(r.name) + (roundDef(rid) ? " · " + roundDef(rid).ties + " ties expected" : "") + "</span></div>" +
       '<div class="adminbox"><label><span>Paste the draw, one tie per line (Home v Away)</span>' +
@@ -1309,12 +1362,14 @@ nav.tabs button{padding:10px 11px}
     var missing = ids.some(function (t) { return !rankOk(ties[t].home) || !rankOk(ties[t].away); });
     if (missing) return note("Some clubs have no position. Re-enter the draw.", "bad");
     var probs = drawProblems(rid, ids.map(function (t) { var x = ties[t]; return [x.home.key || clubKey(x.home.club), x.away.key || clubKey(x.away.club), x.home.short, x.away.short]; }));
-    if (!confirm((probs.length ? "Check before you open:\n\n" + probs.join("\n") + "\n\n" : "") + "Open " + r.name + " with " + ids.length + " ties, locking " + fmtWhen(locksAt) + "? Players will be able to see the ties and pick.")) return;
-    var c = cfg(), updates = {};
+    var c = cfg(), updates = {}, withSpecials = rid === "r3" && !!c.specials;
+    if (!confirm((probs.length ? "Check before you open:\n\n" + probs.join("\n") + "\n\n" : "") + "Open " + r.name + " with " + ids.length + " ties, locking " + fmtWhen(locksAt) + "? Players will be able to see the ties and pick." +
+      (withSpecials ? "\n\nThis also fixes the Cup Winner and Dark Horse bonus for every club, from the positions saved now." : ""))) return;
     ids.forEach(function (t) {
       var x = ties[t]; x.home.key = x.home.key || clubKey(x.home.club); x.away.key = x.away.key || clubKey(x.away.club);
       updates["ties/" + rid + "/" + t] = Logic.freezeTie(x, c, r.mult);
     });
+    if (withSpecials) { var frozen = {}; ids.forEach(function (t) { frozen[t] = updates["ties/" + rid + "/" + t]; }); updates["specials/clubs"] = Logic.specialClubs(frozen); }
     updates["rounds/" + rid + "/locksAt"] = locksAt;
     updates["rounds/" + rid + "/status"] = "open";
     S.busy = true;
@@ -1339,16 +1394,18 @@ nav.tabs button{padding:10px 11px}
 
   function openHTML(rid, r) {
     var ties = tiesOf(rid), ids = Logic.tieIds(ties), picks = picksOf(rid), mgrs = managerList();
-    var anyDead = false;
+    var anyDead = false, sp = rid === "r3" && cfg().specials ? (S.season.specials || {}) : null;
+    function spCell(m, kind) { var k = ((sp.picks || {})[m.uid] || {})[kind], c = (sp.clubs || {})[k]; return '<td class="num">' + (c ? esc(c.short) : "-") + "</td>"; }
     var rows = mgrs.map(function (m) {
       var st = pickState(m.uid, rid); if (st.dead.length) anyDead = true;
       return "<tr><td>" + esc(m.name) + (st.dead.length ? '<small class="raw" style="display:block;font-family:var(--body)">Locked out of: ' + esc(st.dead.join(", ")) + "</small>" : "") + '</td><td class="num">' + st.made + " of " + st.pickable +
-        (st.dead.length ? '<small class="raw" style="display:block;font-family:var(--body)">' + st.dead.length + " locked out</small>" : "") + '</td><td class="num">' + st.status + "</td></tr>";
+        (st.dead.length ? '<small class="raw" style="display:block;font-family:var(--body)">' + st.dead.length + " locked out</small>" : "") + '</td><td class="num">' + st.status + "</td>" + (sp ? spCell(m, "cup") + spCell(m, "dark") : "") + "</tr>";
     }).join("");
     var overdue = Date.now() >= r.locksAt;
     return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>' + esc(r.name) + ' is open</h2><span class="hint">Locks ' + esc(fmtWhen(r.locksAt)) + (overdue ? " (time's up)" : "") + "</span></div>" +
-      '<div class="adminbox">' + (mgrs.length ? '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Manager</th><th class="num">Picks</th><th class="num">Status</th></tr>' + rows + "</table>" : '<p class="hint" style="margin:0">Nobody has joined yet.</p>') +
+      '<div class="adminbox">' + (mgrs.length ? '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Manager</th><th class="num">Picks</th><th class="num">Status</th>' + (sp ? '<th class="num">Cup Winner</th><th class="num">Dark Horse</th>' : "") + "</tr>" + rows + "</table>" : '<p class="hint" style="margin:0">Nobody has joined yet.</p>') +
       '<p class="hint" style="margin:0">Picks are counted out of the ties each manager can actually pick. \u201cLocked out\u201d means both teams in a tie are already used up for them, so nothing can be picked there and it scores 0. Anything else left blank is filled in when you lock: the higher-ranked team, or the other if that one is used up.</p>' +
+      (sp ? '<p class="hint" style="margin:0">Cup Winner and Dark Horse are never filled in for a player. A blank one simply earns no bonus. Only you can see these until the round locks.</p>' : "") +
       '<div class="btnrow"><button type="button" class="btn small" id="oRefresh">Refresh</button><button type="button" class="btn small" id="oLock">Lock ' + esc(r.name) + "</button></div>" +
       '<label><span>Change the lock time</span><input id="oExtend" type="datetime-local"></label><div class="btnrow"><button type="button" class="btn small secondary" id="oExtendGo">Save new lock time</button></div>' +
       "</div></div>";
@@ -1384,7 +1441,7 @@ nav.tabs button{padding:10px 11px}
       }).then(function () {
         var u = {}; u["rounds/" + rid + "/filled"] = true; u["rounds/" + rid + "/lockedAt"] = Date.now();
         return multi(seasonPath(), u);
-      }).then(loadSeason);
+      }).then(loadSeason).then(function () { return rid === "r3" && cfg().specials ? publishLeaderboard() : null; });
     });
   }
 
@@ -1481,11 +1538,14 @@ nav.tabs button{padding:10px 11px}
   function lbTableHTML(rows) {
     var ids = ROUND_DEFS.map(function (d) { return d.id; }).filter(function (id) { return rows.some(function (r) { return r.rounds && r.rounds[id] !== undefined; }); });
     var top = {}; ids.forEach(function (id) { top[id] = Math.max.apply(null, rows.map(function (r) { return (r.rounds && r.rounds[id]) || 0; })); });
+    var sp = rows.some(function (r) { return r.cupClub || r.darkClub; });
+    function spTd(pts, club) { return '<td class="n' + (pts ? " top" : "") + '">' + (club ? (pts ? fmt1(pts) : "0") + "<small>" + esc(club) + "</small>" : "-") + "</td>"; }
     return '<div class="lbwrap"><table class="lbtable"><tr><th class="sticky s1">#</th><th class="sticky s2">Manager</th><th class="n total">Total</th>' +
-      ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + '<th class="n">Correct</th><th class="n">Biggest gap</th></tr>' +
+      ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + (sp ? '<th class="n">Cup Winner</th><th class="n">Dark Horse</th>' : "") + '<th class="n">Correct</th><th class="n">Biggest gap</th></tr>' +
       rows.map(function (r, i) {
         return '<tr><td class="pos sticky s1">' + (i + 1) + '</td><td class="sticky s2">' + esc(r.name) + '</td><td class="n total">' + fmt1(r.points) + "</td>" +
           ids.map(function (id) { var v = (r.rounds && r.rounds[id]) || 0; return '<td class="n' + (v > 0 && v === top[id] ? " top" : "") + '">' + (v ? fmt1(v) : "0") + "</td>"; }).join("") +
+          (sp ? spTd(r.cup, r.cupClub) + spTd(r.dark, r.darkClub) : "") +
           '<td class="n">' + r.correct + '</td><td class="n">' + (r.bestGap ? r.bestGap + "<small>" + esc(r.bestGapClub || "") + "</small>" : "-") + "</td></tr>";
       }).join("") + "</table></div>";
   }
