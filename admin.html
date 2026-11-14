@@ -961,7 +961,8 @@ nav.tabs button{padding:10px 11px}
   ];
   var HEADER_WORDS = { pos: 1, team: 1, club: 1, p: 1, pld: 1, gp: 1, w: 1, d: 1, l: 1, f: 1, a: 1, gf: 1, ga: 1, gd: 1, pts: 1, points: 1, form: 1, overall: 1, home: 1, away: 1 };
 
-  var HEADER_LINE = /played|goals? (for|against)|goal difference|drawn|\blost\b|\bpts\b|\bpoints\b|^\s*pos(ition)?\b/i;
+  // Also skips the form-guide lines BBC Sport adds under each club ("Result Win", "Result Draw", "No Result").
+  var HEADER_LINE = /played|goals? (for|against)|goal difference|drawn|\blost\b|\bpts\b|\bpoints\b|^\s*pos(ition)?\b|^\s*(no )?result\b/i;
   // Pull the club names out of pasted table text, in the order they appear. Ignores header rows
   // (including ones whose words run together) and collapses a name that has been pasted twice.
   function parseTable(text) {
@@ -990,7 +991,7 @@ nav.tabs button{padding:10px 11px}
     var out = [], notes = [], seen = {};
     function add(n) {
       n = n.trim().replace(/\s+/g, " ");
-      if (!n || n.length > 40) return;
+      if (!n || n.length > 40 || !/[A-Za-z]/.test(n)) return;      // a line of numbers is never a club
       var k = clubKey(n); if (!k || seen[k]) return; seen[k] = 1; out.push(n);
     }
     function addMaybeGlued(n) {
