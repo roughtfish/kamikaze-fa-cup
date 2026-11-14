@@ -912,9 +912,11 @@ nav.tabs button{padding:10px 11px}
       '<div class="cols3"><label><span>Uses per team</span><input id="sMax" type="number" min="1" max="5" value="' + c.maxUses + '"></label>' +
       '<label><span>Points cap</span><input id="sCap" type="number" min="5" max="100" value="' + c.cap + '"></label>' +
       '<label><span>Spread</span><input id="sSpread" type="number" min="5" max="40" value="' + c.spread + '"></label></div>' +
+      '<p class="hint" style="margin:0">Uses per team, the cap and the spread are the numbers on the Rules tab. Change them before the first round opens. After that they change how later rounds are scored, so leave them.</p>' +
       '<label style="display:flex;align-items:center;gap:10px;color:var(--ink)"><input id="sSpecials" type="checkbox" style="width:20px;height:20px;padding:0;flex:0 0 auto;accent-color:var(--go)"' + (c.specials ? " checked" : "") + (has && (rounds().r3 || {}).status && rounds().r3.status !== "draft" ? " disabled" : "") + '><span>Season picks: Cup Winner and Dark Horse</span></label>' +
       '<p class="hint" style="margin:0">With season picks on, each player names a Cup Winner and a Dark Horse before Round 3 locks. The bonus for every club is fixed when you open Round 3, so this can\'t be changed after that.</p>' +
-      '<p class="hint" style="margin:0">Uses per team, the cap and the spread are the numbers on the Rules tab. Change them before the first round opens. After that they change how later rounds are scored, so leave them.</p>' +
+      '<h3 style="font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em;font-size:15px;margin:10px 0 0;color:var(--ink)">Round multipliers</h3>' +
+      '<p class="hint" style="margin:0">These multiply the points for tie picks in each round. They don\'t affect Cup Winner or Dark Horse bonuses.</p>' +
       '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Round</th><th class="num">Multiplier</th><th class="pl">Status</th></tr>' + mrows + "</table>" +
       '<div class="btnrow"><button type="button" class="btn small" id="sSave">' + (has ? "Save changes" : "Create the season") + "</button>" +
       (has ? '<button type="button" class="btn small secondary" id="sNew">Start a new season</button>' : (S.sid ? '<button type="button" class="btn small secondary" id="sCancelNew">Cancel</button>' : "")) + "</div>" +
