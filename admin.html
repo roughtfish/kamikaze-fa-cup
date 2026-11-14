@@ -1145,7 +1145,7 @@ nav.tabs button{padding:10px 11px}
         if (t.length !== d.size) warn.push(jobs[i].label + ": expected " + d.size + " clubs but the table has " + t.length + ". Check it looks right.");
         else full.push({ base: d.base, size: d.size });
         t.forEach(function (row) {
-          var name = row.team.name;
+          var name = String(row.team.name || "").replace(/\s+A?FC$/i, "") || row.team.name;   // "Arsenal FC" -> "Arsenal", "Hull City AFC" -> "Hull City"; a leading AFC or FC is part of the name
           entries.push({ name: name, short: SHORT[CANON[norm(name)] || norm(name)] || row.team.shortName || name, rank: d.base + row.position - 1, crest: safeUrl(row.team.crest) || undefined });
         });
       });
