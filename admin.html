@@ -1030,7 +1030,7 @@ nav.tabs button{padding:10px 11px}
       '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Paste a table</h2></div>' +
       '<div class="adminbox"><label><span>Division</span><select id="tbDiv">' + divOpts + "</select></label>" +
       '<label><span>Paste the table, or type the clubs in order (one per line)</span><textarea id="tbText" spellcheck="false" placeholder="1 Barnet 6 3 3 0 14 9 5 12&#10;2 Bristol Rovers 6 4 0 2 12 8 4 12&#10;..."></textarea></label>' +
-      '<div class="btnrow"><button type="button" class="btn small" id="tbRead">Read the table</button></div>' +
+      '<div class="btnrow"><button type="button" class="btn small" id="tbRead">Read the table</button><button type="button" class="btn small secondary" id="tbClear">Clear this division</button></div>' +
       '<p class="hint" style="margin:0">Do this for each division before entering a round\'s draw. Premier League positions 1 to 20, then the Championship, League One and League Two. Anything below League Two counts as 93rd, so it doesn\'t need a table. Known so far: ' +
       DIVISIONS.map(function (d, i) { return counts[i] + " of " + d.size; }).join(", ") + ".</p>" +
       '<div id="tbOut"></div></div></div>' +
@@ -1067,6 +1067,24 @@ nav.tabs button{padding:10px 11px}
       if (o) o.innerHTML = (warnings || []).map(function (w) { return '<div class="strip">' + esc(w) + "</div>"; }).join("") +
         '<div class="adminsum" style="padding:12px 0"><b>' + entries.length + "</b> clubs read: <b>" + fresh + "</b> new, <b>" + moved + "</b> moved, " + (entries.length - fresh - moved) + " unchanged." + (removed.length ? " Removed " + removed.length + " old entr" + (removed.length === 1 ? "y" : "ies") + " from this division: " + esc(removed.join(", ")) + "." : "") + " Positions are saved.</div>";
       note("Positions saved.", "ok");
+    }).catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
+  }
+
+  // Remove every saved club in the chosen division, to start it again from a clean paste.
+  function clearDivision() {
+    var div = DIVISIONS[parseInt($("tbDiv").value, 10)], reg = registry(), updates = {}, n = 0;
+    Object.keys(reg).forEach(function (k) {
+      if (!reg[k].nonLeague && reg[k].rank >= div.base && reg[k].rank < div.base + div.size) { updates["clubs/" + k] = null; n++; }
+    });
+    var name = div.label.replace(/ \(.*$/, ""); if (!/^League/.test(name)) name = "the " + name;
+    if (!n) return note("There are no saved clubs in " + name + " to clear.", "ok");
+    if (!confirm("Clear all " + n + " saved clubs from " + name + "? Draws you've already saved keep their positions. You'll need to load or paste this table again before entering the next draw.")) return;
+    var keep = $("tbDiv").value;
+    S.busy = true;
+    multi(seasonPath(), updates).then(loadSeason).then(function () {
+      renderPositions(); $("tbDiv").value = keep;
+      $("tbOut").innerHTML = '<div class="adminsum" style="padding:12px 0">Cleared <b>' + n + "</b> clubs from " + esc(name) + ".</div>";
+      note(name.replace(/^the /, "The ") + " cleared.", "ok");
     }).catch(function (e) { note(errText(e), "bad"); }).then(function () { S.busy = false; });
   }
 
@@ -1158,6 +1176,7 @@ nav.tabs button{padding:10px 11px}
   }
   $("positionsView").addEventListener("click", function (e) {
     if (e.target.id === "tbRead") readTable();
+    if (e.target.id === "tbClear") clearDivision();
     if (e.target.id === "stLoad") loadStandings();
     if (e.target.id === "nlSave") saveNonLeague();
     var rm = e.target.getAttribute && e.target.getAttribute("data-rmclub");
