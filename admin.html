@@ -1569,6 +1569,21 @@ nav.tabs button{padding:10px 11px}
     var mrows = ROUND_ORDER.map(function (id) { return rounds()[id]; }).filter(Boolean).map(function (r) {
       return "<tr><td>" + esc(r.name) + '</td><td class="num">\u00d7' + r.mult + '</td><td class="num">' + Math.round(cfg.cap * r.mult) + "</td></tr>";
     }).join("");
+    var RL = ROUND_ORDER.map(function (id) { return rounds()[id]; }).filter(Boolean);
+    // Round multipliers, explained with this season's own numbers.
+    var seenMult = {}, multEx = [];
+    RL.forEach(function (r) {
+      if (!(r.mult > 1) || seenMult[r.mult]) return;
+      seenMult[r.mult] = 1;
+      var v = 4 * r.mult;
+      multEx.push("<b>" + (Number.isInteger(v) ? v : v.toFixed(1)) + "</b> in " + (/^Round/.test(r.name) ? "" : "the ") + esc(r.name) + " (\u00d7" + r.mult + ")");
+    });
+    var multText = multEx.length
+      ? "<p>Later rounds are worth more. Every correct prediction in a round has its points multiplied by that round\u2019s multiplier, shown in the table below.</p>" +
+        "<p>For example, a prediction worth <b>4</b> points in a \u00d71 round scores " + multEx.join(" and ") + ".</p>" +
+        "<p>The pick screen already shows the multiplied points, so there\u2019s nothing to work out.</p>" +
+        "<p>The limit of " + cfg.cap + " points on a single pick is applied before the multiplier, so the most one pick can pay also goes up in the later rounds:</p>"
+      : "<p>Every round is worth the same this season, so there are no multipliers to worry about.</p>";
     $("rulesView").innerHTML =
       '<p class="hint" style="margin:18px 2px 0">This is what players see on their Rules tab, worked out from this season\u2019s settings.</p>' +
       '<div class="panel" style="margin-top:18px"><div class="phead"><h2>How it works</h2><span class="hint">Every tie \u00b7 max ' + cfg.maxUses + ' uses per team</span></div><div class="rulesbody">' +
@@ -1586,7 +1601,7 @@ nav.tabs button{padding:10px 11px}
       '<p class="note">Each cell shows the points, then the chance in brackets.</p>' +
       "<p>These chances are a simple estimate from league positions, not bookmakers\u2019 odds, so they can be wrong. Spotting a tie where the real chance is better than the estimate is where the skill is.</p>" +
       '<p class="note">The points are locked when the round opens, so what you see on the pick screen is what you get if you\u2019re right.</p>' +
-      "<h3>Round multipliers</h3><p>Points get bigger as the Cup goes on. The cap is applied first, then the multiplier.</p>" +
+      "<h3>Round multipliers</h3>" + multText +
       '<table class="rulestable"><tr><th></th><th class="num">Multiplier</th><th class="num">Most a pick can pay</th></tr>' + mrows + "</table>" +
       '<h3>Team limits <span class="rulestag">' + cfg.maxUses + " per team</span></h3>" +
       "<p>You can back any one team a <b>maximum of " + cfg.maxUses + " times</b> across the whole Cup. A pick counts as a use when the round locks, whether or not the team goes through. Once a team is used up it\u2019s banned for you, although other managers can still pick it.</p>" +
