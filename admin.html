@@ -962,7 +962,7 @@ nav.tabs button{padding:10px 11px}
   var HEADER_WORDS = { pos: 1, team: 1, club: 1, p: 1, pld: 1, gp: 1, w: 1, d: 1, l: 1, f: 1, a: 1, gf: 1, ga: 1, gd: 1, pts: 1, points: 1, form: 1, overall: 1, home: 1, away: 1 };
 
   // Also skips the form-guide lines BBC Sport adds under each club ("Result Win", "Result Draw", "No Result").
-  var HEADER_LINE = /played|goals? (for|against)|goal difference|drawn|\blost\b|\bpts\b|\bpoints\b|^\s*pos(ition)?\b|^\s*(no )?result\b/i;
+  var HEADER_LINE = /played|goals? (for|against)|goal difference|drawn|\blost\b|\bpts\b|\bpoints\b|^\s*pos(ition)?\b|^\s*(no )?result\b|\bbadge\b/i;
   // Pull the club names out of pasted table text, in the order they appear. Ignores header rows
   // (including ones whose words run together) and collapses a name that has been pasted twice.
   function parseTable(text) {
@@ -1020,7 +1020,7 @@ nav.tabs button{padding:10px 11px}
     if (!S.sid) return needSeason("positionsView");
     var reg = registry(), keys = Object.keys(reg);
     var counts = DIVISIONS.map(function (d) { return keys.filter(function (k) { return !reg[k].nonLeague && reg[k].rank >= d.base && reg[k].rank < d.base + d.size; }).length; });
-    var list = keys.map(function (k) { return reg[k]; }).filter(function (c) { return !c.nonLeague; }).sort(function (a, b) { return a.rank - b.rank; });
+    var list = keys.map(function (k) { return { key: k, name: reg[k].name, rank: reg[k].rank, nonLeague: reg[k].nonLeague }; }).filter(function (c) { return !c.nonLeague; }).sort(function (a, b) { return a.rank - b.rank; });
     var nl = nonLeagueList();
     var divOpts = DIVISIONS.map(function (d, i) { return '<option value="' + i + '">' + esc(d.label) + "</option>"; }).join("");
     var auto = DEMO || !!CONFIG.STANDINGS_URL;
@@ -1042,8 +1042,8 @@ nav.tabs button{padding:10px 11px}
       (nl.length ? '<div style="max-height:200px;overflow:auto"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Saved non-league clubs</th><th class="num"></th></tr>' +
         nl.map(function (c) { return "<tr><td>" + esc(c.name) + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div>" : "") +
       "</div></div>" +
-      (list.length ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Clubs</h2></div><div style="max-height:320px;overflow:auto;padding:0 16px 12px"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Pos</th><th>Club</th></tr>' +
-        list.map(function (c) { return "<tr><td>" + c.rank + "</td><td>" + esc(c.name) + "</td></tr>"; }).join("") + "</table></div></div>" : "");
+      (list.length ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Clubs</h2></div><div style="max-height:320px;overflow:auto;padding:0 16px 12px"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Pos</th><th>Club</th><th class="num"></th></tr>' +
+        list.map(function (c) { return "<tr><td>" + c.rank + "</td><td>" + esc(c.name) + (c.rank > NONLEAGUE_RANK ? ' <span class="raw">(not in any division)</span>' : "") + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div></div>" : "");
   }
 
   // Save a list of {name, short, rank} into the club list and show what changed.
@@ -1075,11 +1075,12 @@ nav.tabs button{padding:10px 11px}
   function clearDivision() {
     var div = DIVISIONS[parseInt($("tbDiv").value, 10)], reg = registry(), updates = {}, n = 0;
     Object.keys(reg).forEach(function (k) {
-      if (!reg[k].nonLeague && reg[k].rank >= div.base && reg[k].rank < div.base + div.size) { updates["clubs/" + k] = null; n++; }
+      var inDiv = reg[k].rank >= div.base && reg[k].rank < div.base + div.size, stray = !(reg[k].rank >= 1 && reg[k].rank <= NONLEAGUE_RANK);
+      if (!reg[k].nonLeague && (inDiv || stray)) { updates["clubs/" + k] = null; n++; }
     });
     var name = div.label.replace(/ \(.*$/, ""); if (!/^League/.test(name)) name = "the " + name;
     if (!n) return note("There are no saved clubs in " + name + " to clear.", "ok");
-    if (!confirm("Clear all " + n + " saved clubs from " + name + "? Draws you've already saved keep their positions. You'll need to load or paste this table again before entering the next draw.")) return;
+    if (!confirm("Clear " + n + " saved clubs from " + name + " (including any stray entries below position 93)? Draws you've already saved keep their positions. You'll need to load or paste this table again before entering the next draw.")) return;
     var keep = $("tbDiv").value;
     S.busy = true;
     multi(seasonPath(), updates).then(loadSeason).then(function () {
@@ -1092,6 +1093,10 @@ nav.tabs button{padding:10px 11px}
   function readTable() {
     var div = DIVISIONS[parseInt($("tbDiv").value, 10)], names = parseTable($("tbText").value), out = $("tbOut");
     if (!names.length) { out.innerHTML = '<div class="strip">No clubs found. Paste the table, or type one club per line.</div>'; return; }
+    if (names.length > div.size) {
+      out.innerHTML = '<div class="strip stuck">Read ' + names.length + " names but this division has " + div.size + " clubs, so nothing was saved. These were read, in order: " + esc(names.join(", ")) + ". Remove the extra lines and try again.</div>";
+      return;
+    }
     var entries = names.map(function (raw, i) { return { name: raw, short: SHORT[CANON[norm(raw)] || norm(raw)] || raw, rank: div.base + i }; });
     var warn = names.length !== div.size ? ["Expected " + div.size + " clubs for this division but read " + names.length + ". Check nothing was missed or doubled. Saved anyway."] : [];
     // Only tidy up the division when the whole table was read. A partial paste never removes anything.
