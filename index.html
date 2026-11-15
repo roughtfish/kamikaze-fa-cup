@@ -211,6 +211,57 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 .spd{font-size:13px;color:var(--muted);line-height:1.4}
 .spf select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:16px}
 .spn{font-size:13px;color:var(--go);min-height:1.3em}
+.st-group{font-family:var(--disp);text-transform:uppercase;letter-spacing:.1em;font-size:13px;color:var(--faint);margin:26px 2px 10px;font-weight:600}
+.st-panel .st-group{margin:14px 16px 4px}
+.st-panel + .st-panel{margin-top:14px}
+.st-note{margin:0;padding:12px 16px 14px;color:var(--muted);font-size:13.5px;line-height:1.5}
+.st-note b{color:var(--ink)}
+.st-you{font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:10px;font-weight:600;color:var(--go);border:1px solid var(--go-dim);border-radius:4px;padding:0 4px;vertical-align:middle}
+.st-ok{color:var(--go)} .st-no{color:var(--danger)}
+.st-pills{padding:12px 16px 0}
+.st-ties{list-style:none;margin:0;padding:6px 16px 12px}
+.st-tie{padding:10px 0;border-top:1px solid var(--line-soft)} .st-tie:first-child{border-top:0}
+.st-line{display:flex;align-items:center;gap:10px}
+.st-line + .st-line{margin-top:6px}
+.st-side{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--ink)}
+.st-side.r{justify-content:flex-end;text-align:right}
+.st-side.lost{color:var(--muted);font-weight:400}
+.st-side.win{color:var(--go)}
+.st-n{font-family:var(--num);font-size:13px;color:var(--ink);min-width:20px} .st-n.r{text-align:right}
+.st-bar{flex:1;display:flex;gap:2px;height:10px}
+.st-bar i{display:block;background:#3b4d73;border-radius:3px;min-width:3px}
+.st-bar i.w{background:#3987e5}
+.st-facts{margin:0;padding:6px 16px 14px}
+.st-facts dt{font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:600;color:var(--faint);margin-top:12px}
+.st-facts dd{margin:3px 0 0;font-size:14px;line-height:1.5;color:var(--muted)}
+.st-facts dd b{color:var(--ink)}
+.st-legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:12px 16px 2px;font-size:13px;color:var(--muted)}
+.st-legend span{display:inline-flex;align-items:center;gap:6px}
+.st-legend i{width:10px;height:10px;border-radius:3px;display:inline-block} .st-legend i.g{background:#5e7095}
+.st-pick{display:inline-flex;align-items:center;gap:6px}
+.st-pick select{padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:14px;max-width:170px}
+.st-chartwrap{padding:8px 10px 4px}
+.st-chart{width:100%;height:auto;display:block}
+.st-grid{stroke:var(--line-soft);stroke-width:1}
+.st-ax{fill:var(--faint);font-family:var(--num);font-size:11px}
+.st-end{fill:var(--ink);font-family:var(--body);font-size:12px;font-weight:600}
+.st-l0{stroke:#5e7095;stroke-width:1.2;opacity:.55;stroke-linejoin:round}
+.st-l1{stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.st-dot0{fill:#5e7095;opacity:.7} .st-dot{stroke:var(--panel);stroke-width:2}
+.st-more{padding:0 0 6px} .st-more summary{cursor:pointer;padding:8px 16px 10px;font-size:13px;color:var(--muted)}
+.st-stacks{padding:10px 16px 4px;display:grid;gap:8px}
+.st-srow{display:grid;grid-template-columns:minmax(72px,30%) minmax(0,1fr) 44px;align-items:center;gap:10px;font-size:13.5px}
+.st-sname{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-stack{display:flex;gap:2px;height:14px;min-width:4px}
+.st-stack i{display:block;border-radius:3px;min-width:3px}
+.st-sval{font-family:var(--num);font-size:13px;color:var(--ink);text-align:right;font-weight:600}
+.st-scroll{max-height:300px;overflow:auto}
+.st-zero{color:var(--faint)}
+.lbtable td.st-wrap{white-space:normal;font-size:13.5px;color:var(--muted);min-width:150px}
+.st-awards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:14px 16px}
+.st-award{border:1px solid var(--line-soft);background:var(--panel-2);border-radius:10px;padding:11px 12px;display:grid;gap:3px;font-size:13px;color:var(--muted)}
+.st-award b{color:var(--ink);font-size:15px;font-weight:600}
+.st-at{font-family:var(--disp);text-transform:uppercase;letter-spacing:.09em;font-size:11px;font-weight:600;color:var(--faint)}
 .spstate{font-family:var(--num);font-size:13px;color:var(--go)}
 .spstate.warn{color:var(--warn)}
 .sprow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center}
@@ -311,6 +362,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     <nav class="tabs" id="tabs" hidden>
       <button data-tab="pick" class="on">Picks</button>
       <button data-tab="table">Table</button>
+      <button data-tab="stats">Stats</button>
       <button data-tab="rules">Rules</button>
     </nav>
   </div>
@@ -345,6 +397,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   </div>
 
   <div id="tableView" hidden></div>
+  <div id="statsView" hidden></div>
   <div id="rulesView" hidden></div>
 </main>
 
@@ -659,6 +712,13 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
         specials: { clubs: demoClubs(r3ties), picks: { "u-demo": { cup: "Man City", dark: "Halifax" }, "u-sam": { cup: "Sunderland" } } }
       } } },
       kamikaze_fa_public: { seasons: { demo: {
+        rounds: {
+          r3: { name: "Round 3", picks: {
+            "Demo Manager": mine3, "Sam": { t01: "away", t02: "away", t03: "home", t04: "away", t05: "home", t06: "home" },
+            "Dave": { t01: "home", t02: "away", t03: "away", t04: "away", t05: "home", t06: "away" }, "Priya": { t01: "home", t02: "home", t03: "home", t04: "home", t05: "away", t06: "home" } } },
+          r4: { name: "Round 4", picks: {
+            "Demo Manager": mine4, "Sam": { t01: "home", t02: "home", t03: "home" }, "Dave": { t01: "none", t02: "away", t03: "away" }, "Priya": { t01: "away", t02: "home", t03: "home" } } }
+        },
         config: cfg,
         leaderboard: [
           { name: "Dave", points: 73.4, correct: 9, bestGap: 73, bestGapClub: "Grimsby", rounds: { r3: 45.0, r4: 26.4 }, cup: 0, cupClub: "Arsenal", dark: 2, darkClub: "Grimsby" },
@@ -700,7 +760,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
   // quiet = a background refresh: keep the tab and round the person is looking at, unless a new round has opened.
   function loadApp(quiet) {
-    if (!quiet) { S.spDraft = null; S.spSaved = false; }     // a fresh sign-in starts with no unsaved season picks
+    if (!quiet) { S.spDraft = null; S.spSaved = false; ST.data = null; ST.round = null; ST.focus = ""; ST.a = ""; ST.b = ""; }     // a fresh sign-in starts with no unsaved season picks
     var prevOpen = (S.rounds.filter(function (r) { return r.status === "open"; })[0] || {}).id, prevView = S.view;
     return Promise.all([
       db.get("kamikaze_fa_public/seasons/" + S.sid + "/config").catch(function () { return null; }),
@@ -795,7 +855,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     ]).then(function (x) {
       if (x[0]) S.cfg = { maxUses: x[0].maxUses || 3, cap: x[0].cap || 30, spread: x[0].spread || 30, specials: !!x[0].specials };
       S.rounds = x[1].filter(Boolean);
-      ["loading", "authView", "pickView", "tableView", "errorView"].forEach(function (id) { $(id).hidden = true; });
+      ["loading", "authView", "pickView", "tableView", "statsView", "errorView"].forEach(function (id) { $(id).hidden = true; });
       $("tabs").hidden = true; $("meChip").hidden = true; $("signOut").hidden = true;
       renderRules();
       $("rulesView").hidden = false;
@@ -1332,13 +1392,381 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   }
 
   /* ---------------- tabs ---------------- */
+  /* ---------------- stats ---------------- */
+  // Everything here is worked out in the browser from what the game already publishes once a round locks:
+  // everyone's picks for that round, the results, and the leaderboard. Nothing about an open round is shown.
+  var ST = { data: null, round: null, focus: "", a: "", b: "" };
+  var ST_COL = { fav: "#3987e5", dog: "#199e70", cup: "#c98500", dark: "#9c6ade" };   // checked for colour-blind separation on the panel colour
+  function ord(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function pct(a, b) { return b ? Math.round(100 * a / b) + "%" : "-"; }
+  function stName(n) { return esc(n) + (S.who && n === S.who.name ? ' <span class="st-you">you</span>' : ""); }
+  function stMe(n) { return S.who && n === S.who.name ? ' class="me"' : ""; }
+
+  function loadStats() {
+    var locked = S.rounds.filter(function (r) { return r.status === "locked" || r.status === "resolved"; });
+    return Promise.all([
+      Promise.all(locked.map(function (r) { return db.get("kamikaze_fa_public/seasons/" + S.sid + "/rounds/" + r.id).catch(function () { return null; }); })),
+      db.get("kamikaze_fa_public/seasons/" + S.sid + "/leaderboard").catch(function () { return null; })
+    ]).then(function (x) { return buildStats(locked, x[0], x[1]); });
+  }
+
+  function buildStats(locked, pubs, lb) {
+    var names = {}, rounds = [], picks = [];
+    locked.forEach(function (r, i) {
+      var pub = pubs[i]; if (!pub || !pub.picks) return;
+      var R = { id: r.id, name: r.name, mult: r.mult, resolved: r.status === "resolved", ties: [] };
+      tieIds(r).forEach(function (tid) {
+        var t = r.ties[tid];
+        var T = { tid: tid, home: t.home, away: t.away, ptsHome: t.ptsHome, ptsAway: t.ptsAway, winner: R.resolved ? (t.winner || null) : null, picks: {} };
+        Object.keys(pub.picks).forEach(function (n) { names[n] = 1; var s = (pub.picks[n] || {})[tid]; if (s) T.picks[n] = s; });
+        R.ties.push(T);
+      });
+      rounds.push(R);
+    });
+    rounds.forEach(function (R) { R.ties.forEach(function (T) { Object.keys(T.picks).forEach(function (n) {
+      var side = T.picks[n];
+      if (side !== "home" && side !== "away") { picks.push({ n: n, R: R, T: T, none: true }); return; }
+      var me = T[side], opp = T[side === "home" ? "away" : "home"], potential = side === "home" ? T.ptsHome : T.ptsAway;
+      picks.push({ n: n, R: R, T: T, side: side, club: me, opp: opp, potential: potential, decided: !!T.winner,
+        won: T.winner ? T.winner === side : null, pts: T.winner === side ? potential : 0, dog: me.rank > opp.rank, gap: me.rank - opp.rank });
+    }); }); });
+    var rows = lb ? (Array.isArray(lb) ? lb : Object.keys(lb).map(function (k) { return lb[k]; })).filter(Boolean) : [], lbBy = {};
+    rows.forEach(function (r) { lbBy[r.name] = r; names[r.name] = 1; });
+    return { rounds: rounds, resolved: rounds.filter(function (R) { return R.resolved; }), mans: Object.keys(names).sort(function (a, b) { return a.localeCompare(b); }), picks: picks, lb: lbBy };
+  }
+
+  function stClubByShort(short) {
+    if (!S.sp || !short) return null;
+    var keys = Object.keys(S.sp.clubs);
+    for (var i = 0; i < keys.length; i++) if (S.sp.clubs[keys[i]].short === short) return { key: keys[i], club: S.sp.clubs[keys[i]] };
+    return null;
+  }
+  // Season-pick points a manager earned in one round: the Dark Horse bonus if their club won, and the Cup Winner bonus in the Final.
+  function stSpecialIn(D, n, R) {
+    var row = D.lb[n], pts = 0; if (!row || !S.sp) return 0;
+    [["dark", row.darkClub], ["cup", row.cupClub]].forEach(function (k) {
+      var c = stClubByShort(k[1]); if (!c) return;
+      R.ties.forEach(function (T) {
+        var side = spKey(T.home) === c.key ? "home" : spKey(T.away) === c.key ? "away" : null;
+        if (!side || T.winner !== side) return;
+        if (k[0] === "dark" && c.club.dark) pts += c.club.dark;
+        if (k[0] === "cup" && R.id === "f") pts += c.club.cup;
+      });
+    });
+    return pts;
+  }
+  function stSum(list, f) { return list.reduce(function (n, x) { return n + f(x); }, 0); }
+  function stOf(D, n) { return D.picks.filter(function (p) { return p.n === n; }); }
+  function stPanel(title, hint, body) { return '<div class="panel st-panel"><div class="phead"><h2>' + title + "</h2>" + (hint ? '<span class="hint">' + hint + "</span>" : "") + "</div>" + body + "</div>"; }
+  function stNote(text) { return '<p class="st-note">' + text + "</p>"; }
+  function stTable(head, rows) { return '<div class="lbwrap"><table class="lbtable">' + "<tr>" + head.map(function (h, i) { return "<th" + (i ? ' class="n"' : "") + ">" + h + "</th>"; }).join("") + "</tr>" + rows.join("") + "</table></div>"; }
+  function stGroup(title) { return '<h3 class="st-group">' + title + "</h3>"; }
+
+  /* --- the round --- */
+  function stRound(D) {
+    var R = D.rounds.filter(function (r) { return r.id === ST.round; })[0] || D.rounds[D.rounds.length - 1];
+    ST.round = R.id;
+    var pills = '<div class="rounds st-pills" role="group" aria-label="Round">' + D.rounds.map(function (r) {
+      return '<button type="button" data-stround="' + r.id + '" aria-pressed="' + (r.id === R.id) + '">' + esc(r.name) + "</button>"; }).join("") + "</div>";
+    var me = S.who && S.who.name;
+    var ties = R.ties.map(function (T) {
+      var h = 0, a = 0, mine = me ? T.picks[me] : null;
+      Object.keys(T.picks).forEach(function (n) { if (T.picks[n] === "home") h++; else if (T.picks[n] === "away") a++; });
+      function side(k, n) {
+        var w = T.winner === k;
+        return '<span class="st-side' + (k === "away" ? " r" : "") + (w ? " win" : T.winner ? " lost" : "") + '">' + (k === "home" ? crestHTML(T.home, true) : "") +
+          "<span>" + esc(T[k].short) + (w ? " ✓" : "") + (mine === k ? ' <span class="st-you">you</span>' : "") + "</span>" + (k === "away" ? crestHTML(T.away, true) : "") + "</span>";
+      }
+      return '<li class="st-tie"><div class="st-line">' + side("home") + side("away") + "</div>" +
+        '<div class="st-line"><b class="st-n">' + h + '</b><div class="st-bar" role="img" aria-label="' + esc(T.home.short) + " " + h + ", " + esc(T.away.short) + " " + a + '">' +
+        (h ? '<i class="' + (T.winner === "home" ? "w" : "") + '" style="flex:' + h + '"></i>' : "") + (a ? '<i class="' + (T.winner === "away" ? "w" : "") + '" style="flex:' + a + '"></i>' : "") +
+        '</div><b class="st-n r">' + a + "</b></div></li>";
+    }).join("");
+    var out = stPanel("Who backed whom", R.resolved ? "Winners ticked" : "Locked, awaiting results", pills + '<ul class="st-ties">' + ties + "</ul>");
+
+    var rp = D.picks.filter(function (p) { return p.R === R && !p.none; }), facts = [];
+    if (R.resolved) {
+      // shock of the round: the result the fewest managers saw coming
+      var shock = null;
+      R.ties.forEach(function (T) {
+        if (!T.winner) return;
+        var on = rp.filter(function (p) { return p.T === T; }), got = on.filter(function (p) { return p.won; });
+        if (on.length < 2) return;
+        var share = got.length / on.length;
+        if (share < 0.5 && (!shock || share < shock.share)) shock = { T: T, share: share, got: got, total: on.length };
+      });
+      facts.push(["Shock of the round", shock
+        ? "<b>" + esc(shock.T[shock.T.winner].short) + "</b> knocked out " + esc(shock.T[shock.T.winner === "home" ? "away" : "home"].short) + ". " +
+          (shock.got.length ? shock.got.length + " of " + shock.total + " managers predicted it: " + shock.got.map(function (p) { return stName(p.n); }).join(", ") + "." : "Nobody predicted it.")
+        : "No shocks. Most managers got every result right."]);
+      var tot = {}; rp.forEach(function (p) { tot[p.n] = (tot[p.n] || 0) + p.pts; });
+      var best = Math.max.apply(null, Object.keys(tot).map(function (n) { return tot[n]; }).concat([0]));
+      var winners = Object.keys(tot).filter(function (n) { return best > 0 && Math.abs(tot[n] - best) < 1e-9; });
+      facts.push(["Round winner", winners.length ? winners.map(stName).join(" and ") + " with <b>" + fmt1(best) + "</b> points." : "Nobody scored."]);
+      var bp = rp.filter(function (p) { return p.won; }).sort(function (x, y) { return y.pts - x.pts; })[0];
+      if (bp) {
+        var same = rp.filter(function (p) { return p.won && p.T === bp.T; });
+        facts.push(["Best pick", "<b>" + esc(bp.club.short) + "</b> to beat " + esc(bp.opp.short) + ", worth <b>" + fmt1(bp.pts) + "</b> points. Predicted by " + same.map(function (p) { return stName(p.n); }).join(", ") + "."]);
+      }
+    }
+    var wolves = [];
+    R.ties.forEach(function (T) {
+      var on = rp.filter(function (p) { return p.T === T; });
+      if (on.length < 3) return;
+      ["home", "away"].forEach(function (k) {
+        var s = on.filter(function (p) { return p.side === k; });
+        if (s.length === 1) wolves.push(stName(s[0].n) + " alone on " + esc(T[k].short) + (T.winner ? (s[0].won ? ' <span class="st-ok">won, +' + fmt1(s[0].pts) + "</span>" : ' <span class="st-no">lost</span>') : ""));
+      });
+    });
+    facts.push(["Lone wolves", wolves.length ? wolves.join("<br>") : "Nobody went out on their own this round."]);
+    out += stPanel(esc(R.name) + " in brief", "", '<dl class="st-facts">' + facts.map(function (f) { return "<dt>" + f[0] + "</dt><dd>" + f[1] + "</dd>"; }).join("") + "</dl>");
+    return out;
+  }
+
+  /* --- the league so far --- */
+  function stStandings(D) {            // league places after each scored round
+    var run = {}, steps = [];
+    D.mans.forEach(function (n) { run[n] = 0; });
+    D.resolved.forEach(function (R) {
+      D.mans.forEach(function (n) { run[n] += stSum(D.picks.filter(function (p) { return p.n === n && p.R === R && !p.none; }), function (p) { return p.pts; }) + stSpecialIn(D, n, R); });
+      var order = D.mans.slice().sort(function (a, b) { return run[b] - run[a] || a.localeCompare(b); }), pos = {}, pts = {};
+      order.forEach(function (n, i) { pos[n] = i + 1; pts[n] = run[n]; });
+      steps.push({ R: R, pos: pos, pts: pts });
+    });
+    return steps;
+  }
+  function stTracker(D) {
+    var steps = stStandings(D), N = D.mans.length, me = S.who && S.who.name;
+    if (!steps.length) return stPanel("League position, round by round", "", stNote("This appears once the first round has been scored."));
+    var others = D.mans.filter(function (n) { return n !== me; });
+    if (ST.focus && D.mans.indexOf(ST.focus) === -1) ST.focus = "";
+    // Drawn at the panel's real width, so the labels stay a readable size on a phone.
+    var W = Math.max(300, Math.min(700, ($("statsView").clientWidth || 640) - 22)), H = Math.max(190, Math.min(340, 50 + N * 15)), L = 36, Rt = W < 420 ? 86 : 100, T = 14, B = 28;
+    var x = function (i) { return steps.length === 1 ? L + (W - L - Rt) / 2 : L + i * (W - L - Rt) / (steps.length - 1); };
+    var y = function (p) { return N === 1 ? (T + H - B) / 2 : T + (p - 1) * (H - T - B) / (N - 1); };
+    var svg = '<svg viewBox="0 0 ' + W + " " + H + '" class="st-chart" role="img" aria-label="League position after each round. The table below has the same numbers.">';
+    [1, N].filter(function (v, i, a) { return a.indexOf(v) === i; }).forEach(function (p) {
+      svg += '<line x1="' + L + '" x2="' + (W - Rt) + '" y1="' + y(p) + '" y2="' + y(p) + '" class="st-grid"/><text x="' + (L - 8) + '" y="' + (y(p) + 4) + '" text-anchor="end" class="st-ax">' + ord(p) + "</text>";
+    });
+    steps.forEach(function (s, i) { svg += '<text x="' + x(i) + '" y="' + (H - 6) + '" text-anchor="middle" class="st-ax">' + esc(LB_SHORT[s.R.id] || s.R.name) + "</text>"; });
+    function line(n, cls, col) {
+      var pts = steps.map(function (s, i) { return x(i) + "," + y(s.pos[n]); }).join(" "), o = "";
+      if (steps.length > 1) o += '<polyline points="' + pts + '" fill="none" class="' + cls + '"' + (col ? ' stroke="' + col + '"' : "") + "/>";
+      steps.forEach(function (s, i) {
+        o += '<circle cx="' + x(i) + '" cy="' + y(s.pos[n]) + '" r="' + (col ? 4.5 : 2.5) + '" class="' + (col ? "st-dot" : "st-dot0") + '"' + (col ? ' fill="' + col + '"' : "") + "><title>" + esc(n) + ": " + ord(s.pos[n]) + " after " + esc(s.R.name) + " (" + fmt1(s.pts[n]) + " pts)</title></circle>";
+      });
+      if (col) { var last = steps[steps.length - 1]; o += '<text x="' + (x(steps.length - 1) + 10) + '" y="' + (y(last.pos[n]) + 4) + '" class="st-end">' + (n === me ? "You" : esc(n.length > 11 ? n.slice(0, 10) + "…" : n)) + "</text>"; }
+      return o;
+    }
+    D.mans.forEach(function (n) { if (n !== me && n !== ST.focus) svg += line(n, "st-l0"); });
+    if (ST.focus) svg += line(ST.focus, "st-l1", ST_COL.cup);
+    if (me && D.mans.indexOf(me) !== -1) svg += line(me, "st-l1", ST_COL.fav);
+    svg += "</svg>";
+    var legend = '<div class="st-legend">' + (me && D.mans.indexOf(me) !== -1 ? '<span><i style="background:' + ST_COL.fav + '"></i>You</span>' : "") +
+      (ST.focus ? '<span><i style="background:' + ST_COL.cup + '"></i>' + esc(ST.focus) + "</span>" : "") + '<span><i class="g"></i>Everyone else</span>' +
+      '<label class="st-pick">Highlight <select data-stsel="focus"><option value="">nobody else</option>' + others.map(function (n) { return '<option' + (n === ST.focus ? " selected" : "") + ">" + esc(n) + "</option>"; }).join("") + "</select></label></div>";
+    var order = D.mans.slice().sort(function (a, b) { var l = steps[steps.length - 1]; return l.pos[a] - l.pos[b]; });
+    var table = stTable(["Manager"].concat(steps.map(function (s) { return esc(LB_SHORT[s.R.id] || s.R.name); })), order.map(function (n) {
+      return "<tr" + stMe(n) + "><td>" + stName(n) + "</td>" + steps.map(function (s) { return '<td class="n">' + ord(s.pos[n]) + "</td>"; }).join("") + "</tr>"; }));
+    return stPanel("League position, round by round", "1st is at the top", legend + '<div class="st-chartwrap">' + svg + "</div><details class=\"st-more\"><summary>Show as a table</summary>" + table + "</details>");
+  }
+  function stSources(D) {
+    if (!D.resolved.length) return "";
+    var rows = D.mans.map(function (n) {
+      var mine = stOf(D, n).filter(function (p) { return p.won; }), lb = D.lb[n] || {};
+      var r = { n: n, fav: stSum(mine.filter(function (p) { return !p.dog; }), function (p) { return p.pts; }), dog: stSum(mine.filter(function (p) { return p.dog; }), function (p) { return p.pts; }), cup: lb.cup || 0, dark: lb.dark || 0 };
+      r.total = r.fav + r.dog + r.cup + r.dark; return r;
+    }).sort(function (a, b) { return b.total - a.total || a.n.localeCompare(b.n); });
+    var max = Math.max.apply(null, rows.map(function (r) { return r.total; }).concat([1]));
+    var keys = [["fav", "Favourites"], ["dog", "Underdogs"], ["cup", "Cup Winner"], ["dark", "Dark Horse"]];
+    var used = keys.filter(function (k) { return rows.some(function (r) { return r[k[0]] > 0; }); });
+    var legend = '<div class="st-legend">' + used.map(function (k) { return '<span><i style="background:' + ST_COL[k[0]] + '"></i>' + k[1] + "</span>"; }).join("") + "</div>";
+    var bars = rows.map(function (r) {
+      return '<div class="st-srow"><span class="st-sname">' + stName(r.n) + '</span><div class="st-stack" style="width:' + (100 * r.total / max).toFixed(1) + '%">' +
+        used.filter(function (k) { return r[k[0]] > 0; }).map(function (k) { return '<i style="flex:' + r[k[0]] + ";background:" + ST_COL[k[0]] + '" title="' + esc(r.n) + ", " + k[1] + ": " + fmt1(r[k[0]]) + ' pts"></i>'; }).join("") +
+        '</div><b class="st-sval">' + fmt1(r.total) + "</b></div>";
+    }).join("");
+    var table = stTable(["Manager"].concat(used.map(function (k) { return k[1]; }), ["Total"]), rows.map(function (r) {
+      return "<tr" + stMe(r.n) + "><td>" + stName(r.n) + "</td>" + used.map(function (k) { return '<td class="n">' + fmt1(r[k[0]]) + "</td>"; }).join("") + '<td class="n total">' + fmt1(r.total) + "</td></tr>"; }));
+    return stPanel("Where the points came from", "", legend + '<div class="st-stacks">' + bars + "</div>" +
+      stNote("An underdog is the lower-placed club in a tie. Hover or tap a bar segment for its points.") + '<details class="st-more"><summary>Show as a table</summary>' + table + "</details>");
+  }
+  function stGiant(D) {
+    if (!D.resolved.length) return "";
+    var rows = D.mans.map(function (n) {
+      var dogs = stOf(D, n).filter(function (p) { return !p.none && p.decided && p.dog; }), hit = dogs.filter(function (p) { return p.won; });
+      var top = hit.slice().sort(function (a, b) { return b.gap - a.gap; })[0];
+      return { n: n, hit: hit.length, tried: dogs.length, gap: top ? top.gap : 0, club: top ? top.club.short + " v " + top.opp.short : "" };
+    }).sort(function (a, b) { return b.hit - a.hit || b.gap - a.gap || a.n.localeCompare(b.n); });
+    return stPanel("Giant-killers", "Upsets predicted", stTable(["Manager", "Upsets", "Tried", "Biggest gap"], rows.map(function (r) {
+      return "<tr" + stMe(r.n) + "><td>" + stName(r.n) + '</td><td class="n total">' + r.hit + '</td><td class="n">' + r.tried + '</td><td class="n">' + (r.gap ? r.gap + (r.gap === 1 ? " place" : " places") + "<small>" + esc(r.club) + "</small>" : "-") + "</td></tr>"; })) +
+      stNote("An upset is a correct prediction for the lower-placed club. The gap is how many league places separated the two."));
+  }
+  function stStyleRows(D) {
+    return D.mans.map(function (n) {
+      var mine = stOf(D, n).filter(function (p) { return !p.none; }), dec = mine.filter(function (p) { return p.decided; });
+      var dogs = mine.filter(function (p) { return p.dog; }), dogDec = dogs.filter(function (p) { return p.decided; }), crowdOn = 0, crowdWith = 0;
+      mine.forEach(function (p) {
+        var h = 0, a = 0; Object.keys(p.T.picks).forEach(function (m) { if (p.T.picks[m] === "home") h++; else if (p.T.picks[m] === "away") a++; });
+        if (h === a) return; crowdOn++; if ((h > a ? "home" : "away") === p.side) crowdWith++;
+      });
+      return { n: n, picks: mine.length, dec: dec.length, right: dec.filter(function (p) { return p.won; }).length, dogs: dogs.length, dogDec: dogDec.length,
+        dogRight: dogDec.filter(function (p) { return p.won; }).length, crowdOn: crowdOn, crowdWith: crowdWith,
+        unlucky: dec.filter(function (p) { return !p.won && p.club.p >= 0.7; }).length };
+    });
+  }
+  function stStyle(D) {
+    var rows = stStyleRows(D).sort(function (a, b) { return (b.dec ? b.right / b.dec : -1) - (a.dec ? a.right / a.dec : -1) || a.n.localeCompare(b.n); });
+    return stPanel("Accuracy and style", "", stTable(["Manager", "Correct", "Backs the underdog", "Underdogs that won", "With the crowd"], rows.map(function (r) {
+      return "<tr" + stMe(r.n) + "><td>" + stName(r.n) + '</td><td class="n total">' + pct(r.right, r.dec) + "<small>" + r.right + " of " + r.dec + '</small></td><td class="n">' + pct(r.dogs, r.picks) + "<small>" + r.dogs + " of " + r.picks +
+        '</small></td><td class="n">' + pct(r.dogRight, r.dogDec) + "<small>" + r.dogRight + " of " + r.dogDec + '</small></td><td class="n">' + pct(r.crowdWith, r.crowdOn) + "<small>" + r.crowdWith + " of " + r.crowdOn + "</small></td></tr>"; })) +
+      stNote("“With the crowd” is how often a manager picked the same side as most of the league. A low figure marks a maverick, a high one a sheep."));
+  }
+  function stH2H(D) {
+    if (D.mans.length < 2) return "";
+    var me = S.who && S.who.name;
+    if (D.mans.indexOf(ST.a) === -1) ST.a = D.mans.indexOf(me) !== -1 ? me : D.mans[0];
+    if (D.mans.indexOf(ST.b) === -1 || ST.b === ST.a) ST.b = D.mans.filter(function (n) { return n !== ST.a; })[0];
+    function sel(k) { return '<select data-stsel="' + k + '">' + D.mans.map(function (n) { return "<option" + (n === ST[k] ? " selected" : "") + ">" + esc(n) + "</option>"; }).join("") + "</select>"; }
+    var rows = [], pa = 0, pb = 0, same = 0;
+    D.resolved.forEach(function (R) { R.ties.forEach(function (T) {
+      var a = T.picks[ST.a], b = T.picks[ST.b]; if (!a || !b) return;
+      if (a === b) { same++; return; }
+      function cell(s) { if (s !== "home" && s !== "away") return "no team left"; var w = T.winner === s, v = s === "home" ? T.ptsHome : T.ptsAway; return esc(T[s].short) + (w ? ' <span class="st-ok">+' + fmt1(v) + "</span>" : ""); }
+      if (T.winner === a) pa += a === "home" ? T.ptsHome : T.ptsAway;
+      if (T.winner === b) pb += b === "home" ? T.ptsHome : T.ptsAway;
+      rows.push("<tr><td>" + esc(LB_SHORT[R.id] || R.name) + "<small>" + esc(T.home.short) + " v " + esc(T.away.short) + '</small></td><td class="n">' + cell(a) + '</td><td class="n">' + cell(b) + "</td></tr>");
+    }); });
+    var sum = !D.resolved.length ? "Head to head starts once a round has been scored." : rows.length
+      ? "They agreed on " + same + " ties and split on <b>" + rows.length + "</b>. From those, " + esc(ST.a) + " took <b>" + fmt1(pa) + "</b> points and " + esc(ST.b) + " took <b>" + fmt1(pb) + "</b>."
+      : "These two have made the same prediction on every tie so far.";
+    return stPanel("Head to head", "", '<div class="st-legend"><label class="st-pick">' + sel("a") + '</label><span>against</span><label class="st-pick">' + sel("b") + "</label></div>" + stNote(sum) +
+      (rows.length ? '<div class="st-scroll">' + stTable(["Tie", esc(ST.a), esc(ST.b)], rows) + "</div>" : ""));
+  }
+
+  /* --- the Kamikaze angle --- */
+  function stKamikaze(D) {
+    var max = S.cfg.maxUses, used = {}, backed = {};
+    D.picks.forEach(function (p) {
+      if (p.none) return; var k = spKey(p.club);
+      (used[p.n] = used[p.n] || {})[k] = (used[p.n][k] || 0) + 1;
+      backed[k] = backed[k] || { club: p.club, n: 0 }; backed[k].n++;
+    });
+    // clubs still in the Cup: everyone in the latest round we know about, minus anyone already knocked out of it
+    var live = S.rounds.filter(function (r) { return r.status !== "draft" && tieIds(r).length; }).pop(), alive = [];
+    if (live) tieIds(live).forEach(function (tid) { var t = live.ties[tid]; ["home", "away"].forEach(function (k) { if (!(live.status === "resolved" && t.winner && t.winner !== k)) alive.push(t[k]); }); });
+    alive.sort(function (a, b) { return a.rank - b.rank || String(a.short).localeCompare(String(b.short)); });
+    var cols = alive.slice(0, 8), out = "";
+    if (cols.length) out += stPanel("Picks left on the big clubs", "Out of " + max + " each", stTable(["Manager"].concat(cols.map(function (c) { return esc(c.short); })), D.mans.map(function (n) {
+      return "<tr" + stMe(n) + "><td>" + stName(n) + "</td>" + cols.map(function (c) { var left = Math.max(0, max - ((used[n] || {})[spKey(c)] || 0)); return '<td class="n' + (left ? "" : " st-zero") + '">' + (left ? left : "used up") + "</td>"; }).join("") + "</tr>"; })) +
+      stNote("The " + cols.length + " highest-placed clubs still in the Cup, and how many times each manager can still pick them."));
+    var lock = D.mans.map(function (n) { var mine = stOf(D, n).filter(function (p) { return p.none; }); return { n: n, total: mine.length, by: D.rounds.map(function (R) { return mine.filter(function (p) { return p.R === R; }).length; }) }; })
+      .filter(function (r) { return r.total; }).sort(function (a, b) { return b.total - a.total || a.n.localeCompare(b.n); });
+    out += stPanel("Locked out", "Ties with no team left to pick", lock.length
+      ? stTable(["Manager"].concat(D.rounds.map(function (R) { return esc(LB_SHORT[R.id] || R.name); }), ["Total"]), lock.map(function (r) {
+          return "<tr" + stMe(r.n) + "><td>" + stName(r.n) + "</td>" + r.by.map(function (v) { return '<td class="n">' + (v || "-") + "</td>"; }).join("") + '<td class="n total">' + r.total + "</td></tr>"; }))
+      : stNote("Nobody has run out of teams on any tie so far."));
+    var top = Object.keys(backed).map(function (k) { return backed[k]; }).sort(function (a, b) { return b.n - a.n || a.club.rank - b.club.rank; }).slice(0, 8), mx = top.length ? top[0].n : 1;
+    if (top.length) out += stPanel("Most-backed clubs", "Picks across the whole league", '<div class="st-stacks">' + top.map(function (b) {
+      return '<div class="st-srow"><span class="st-sname">' + esc(b.club.short) + '</span><div class="st-stack" style="width:' + (100 * b.n / mx).toFixed(1) + '%"><i style="flex:1;background:' + ST_COL.fav + '" title="' + esc(b.club.short) + ": " + b.n + ' picks"></i></div><b class="st-sval">' + b.n + "</b></div>"; }).join("") + "</div>");
+    return out;
+  }
+
+  /* --- season picks --- */
+  function stSeason(D) {
+    var rows = D.mans.map(function (n) { return D.lb[n]; }).filter(function (r) { return r && (r.cupClub || r.darkClub); });
+    if (!rows.length) return "";
+    function tally(field) {
+      var by = {}; rows.forEach(function (r) { if (r[field]) (by[r[field]] = by[r[field]] || []).push(r.name); });
+      return Object.keys(by).sort(function (a, b) { return by[b].length - by[a].length || a.localeCompare(b); }).map(function (c) {
+        return "<tr><td>" + esc(c) + '</td><td class="n total">' + by[c].length + '</td><td class="st-wrap">' + by[c].map(stName).join(", ") + "</td></tr>"; });
+    }
+    function tbl(title, field) { var t = tally(field); return t.length ? stGroup(title) + '<div class="lbwrap"><table class="lbtable"><tr><th>Club</th><th class="n">Picked by</th><th>Managers</th></tr>' + t.join("") + "</table></div>" : ""; }
+    var out = stPanel("Who picked whom", "", tbl("Cup Winner", "cupClub") + tbl("Dark Horse", "darkClub"));
+    function state(short, kind, earned) {
+      if (!short) return '<td class="n">-</td>';
+      var c = stClubByShort(short), run = c ? clubRun(c.key) : null, txt = "";
+      if (!c) txt = "";
+      else if (kind === "cup") txt = run.champion ? '<span class="st-ok">won it, +' + fmtBonus(c.club.cup) + "</span>" : run.out ? '<span class="st-no">out</span>' : "still in, +" + fmtBonus(c.club.cup) + " if they win";
+      else txt = (earned ? '<span class="st-ok">+' + fmt1(earned) + " so far</span>, " : "") + (run.out ? '<span class="st-no">out</span>' : "still in, +" + fmtBonus(c.club.dark || 0) + " a round");
+      return '<td class="n">' + esc(short) + "<small>" + txt + "</small></td>";
+    }
+    out += stPanel("Still alive", "", stTable(["Manager", "Cup Winner", "Dark Horse"], rows.map(function (r) {
+      return "<tr" + stMe(r.name) + "><td>" + stName(r.name) + "</td>" + state(r.cupClub, "cup", r.cup) + state(r.darkClub, "dark", r.dark) + "</tr>"; })));
+    return out;
+  }
+
+  /* --- fun extras --- */
+  function stAutopilot(D) {             // what leaving every tie to the auto-pick would have scored
+    var used = {}, pts = 0, max = S.cfg.maxUses;
+    D.rounds.forEach(function (R) { R.ties.forEach(function (T) {
+      var first = T.home.rank <= T.away.rank ? "home" : "away", other = first === "home" ? "away" : "home", ch = null;
+      if ((used[spKey(T[first])] || 0) < max) ch = first; else if ((used[spKey(T[other])] || 0) < max) ch = other;
+      if (!ch) return; used[spKey(T[ch])] = (used[spKey(T[ch])] || 0) + 1;
+      if (T.winner === ch) pts += ch === "home" ? T.ptsHome : T.ptsAway;
+    }); });
+    return pts;
+  }
+  function stExtras(D) {
+    if (!D.resolved.length) return "";
+    var auto = stAutopilot(D), tiePts = {};
+    D.mans.forEach(function (n) { tiePts[n] = stSum(stOf(D, n), function (p) { return p.pts || 0; }); });
+    var beating = D.mans.filter(function (n) { return tiePts[n] > auto + 1e-9; });
+    var out = stPanel("Beating the autopilot", "", stNote("A manager who never made a prediction, and left every tie to the automatic pick, would have <b>" + fmt1(auto) + "</b> points from ties. That would put them <b>" + ord(beating.length + 1) + "</b> of " + (D.mans.length + 1) + ". " +
+      (beating.length ? beating.length + " of " + D.mans.length + " managers are beating it: " + beating.sort(function (a, b) { return tiePts[b] - tiePts[a]; }).map(stName).join(", ") + "." : "Nobody is beating it yet.") + " Season picks aren't counted here."));
+    var st = stStyleRows(D), awards = [];
+    function best(list, f, min) { var top = null; list.forEach(function (r) { var v = f(r); if (v === null || v === undefined || isNaN(v)) return; if (!top || v > top.v) top = { v: v, n: [r.n] }; else if (v === top.v) top.n.push(r.n); }); return top && top.v > (min || 0) ? top : null; }
+    var gk = null; D.picks.forEach(function (p) { if (p.won && p.dog && (!gk || p.gap > gk.gap)) gk = p; });
+    if (gk) awards.push(["Giant-killer", D.picks.filter(function (p) { return p.won && p.T === gk.T && p.side === gk.side; }).map(function (p) { return stName(p.n); }).join(", "), esc(gk.club.short) + " over " + esc(gk.opp.short) + ", " + gk.gap + (gk.gap === 1 ? " place" : " places") + " apart"]);
+    var a;
+    if ((a = best(st.filter(function (r) { return r.dec >= 3; }), function (r) { return r.right / r.dec; }))) awards.push(["Sharpest", a.n.map(stName).join(", "), Math.round(a.v * 100) + "% of predictions correct"]);
+    if ((a = best(st.filter(function (r) { return r.picks >= 3; }), function (r) { return r.dogs / r.picks; }))) awards.push(["Bravest", a.n.map(stName).join(", "), "backs the underdog " + Math.round(a.v * 100) + "% of the time"]);
+    if ((a = best(st.filter(function (r) { return r.crowdOn >= 3; }), function (r) { return 1 - r.crowdWith / r.crowdOn; }))) awards.push(["Maverick", a.n.map(stName).join(", "), "goes against the crowd " + Math.round(a.v * 100) + "% of the time"]);
+    if ((a = best(st.filter(function (r) { return r.crowdOn >= 3; }), function (r) { return r.crowdWith / r.crowdOn; }))) awards.push(["Sheep", a.n.map(stName).join(", "), "with the crowd " + Math.round(a.v * 100) + "% of the time"]);
+    if ((a = best(st, function (r) { return r.unlucky; }))) awards.push(["Unluckiest", a.n.map(stName).join(", "), a.v + (a.v === 1 ? " strong favourite" : " strong favourites") + " let them down"]);
+    var wins = {}; D.resolved.forEach(function (R) { var t = {}; D.picks.forEach(function (p) { if (p.R === R && !p.none) t[p.n] = (t[p.n] || 0) + p.pts; }); var m = Math.max.apply(null, Object.keys(t).map(function (n) { return t[n]; }).concat([0])); if (m > 0) Object.keys(t).forEach(function (n) { if (Math.abs(t[n] - m) < 1e-9) wins[n] = (wins[n] || 0) + 1; }); });
+    if ((a = best(Object.keys(wins).map(function (n) { return { n: n, w: wins[n] }; }), function (r) { return r.w; }))) awards.push(["Round specialist", a.n.map(stName).join(", "), a.v + (a.v === 1 ? " round won" : " rounds won")]);
+    var finished = S.rounds.some(function (r) { return r.id === "f" && r.status === "resolved"; });
+    if (awards.length) out += stPanel("Awards", finished ? "Final standings" : "As things stand", '<div class="st-awards">' + awards.map(function (w) { return '<div class="st-award"><span class="st-at">' + w[0] + '</span><b>' + w[1] + "</b><span>" + w[2] + "</span></div>"; }).join("") + "</div>");
+    return out;
+  }
+
+  var LB_SHORT = { r3: "R3", r4: "R4", r5: "R5", qf: "QF", sf: "SF", f: "Final" };
+  function drawStats() {
+    var D = ST.data, box = $("statsView");
+    if (!D || !D.rounds.length) {
+      box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Stats</h2></div><div class="empty"><b>Nothing yet</b>Stats appear once the first round has locked. Until then everyone\'s picks stay hidden.</div></div>';
+      return;
+    }
+    box.innerHTML = stGroup("The round") + stRound(D) + stGroup("The league so far") + stTracker(D) + stSources(D) + stGiant(D) +
+      stGroup("Manager style") + stStyle(D) + stH2H(D) + stGroup("The Kamikaze angle") + stKamikaze(D) +
+      (stSeason(D) ? stGroup("Season picks") + stSeason(D) : "") + (stExtras(D) ? stGroup("Extras") + stExtras(D) : "");
+  }
+  function renderStats() {
+    var box = $("statsView");
+    if (!ST.data) box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Stats</h2></div><div class="empty"><b>Loading</b></div></div>';
+    loadStats().then(function (D) { ST.data = D; drawStats(); }).catch(function () {
+      box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Stats</h2></div><div class="empty"><b>Couldn\'t load</b>Check your connection and try again.</div></div>';
+    });
+  }
+  $("statsView").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-stround]"); if (!b) return;
+    ST.round = b.getAttribute("data-stround"); var y = window.scrollY; drawStats(); window.scrollTo(0, y);
+  });
+  $("statsView").addEventListener("change", function (e) {
+    var k = e.target.getAttribute && e.target.getAttribute("data-stsel"); if (!k) return;
+    ST[k] = e.target.value; var y = window.scrollY; drawStats(); window.scrollTo(0, y);
+    var s = $("statsView").querySelector('[data-stsel="' + k + '"]'); if (s) s.focus();
+  });
+
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
     var name = b.getAttribute("data-tab");
     if (!S.sid || !S.who) return;
-    $("pickView").hidden = name !== "pick"; $("tableView").hidden = name !== "table"; $("rulesView").hidden = name !== "rules";
+    $("pickView").hidden = name !== "pick"; $("tableView").hidden = name !== "table"; $("rulesView").hidden = name !== "rules"; $("statsView").hidden = name !== "stats";
     Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function (x) { x.classList.toggle("on", x === b); });
     if (name === "table") renderTable();
+    if (name === "stats") renderStats();
     window.scrollTo(0, 0);
   });
 
