@@ -1022,6 +1022,7 @@ nav.tabs button{padding:10px 11px}
     var counts = DIVISIONS.map(function (d) { return keys.filter(function (k) { return !reg[k].nonLeague && reg[k].rank >= d.base && reg[k].rank < d.base + d.size; }).length; });
     var list = keys.map(function (k) { return { key: k, name: reg[k].name, rank: reg[k].rank, nonLeague: reg[k].nonLeague }; }).filter(function (c) { return !c.nonLeague; }).sort(function (a, b) { return a.rank - b.rank; });
     var nl = nonLeagueList();
+    var noBadge = keys.filter(function (k) { return !safeUrl(reg[k].crest); });
     var divOpts = DIVISIONS.map(function (d, i) { return '<option value="' + i + '">' + esc(d.label) + "</option>"; }).join("");
     var auto = DEMO || !!CONFIG.STANDINGS_URL;
     $("positionsView").innerHTML =
@@ -1042,8 +1043,11 @@ nav.tabs button{padding:10px 11px}
       (nl.length ? '<div style="max-height:200px;overflow:auto"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Saved non-league clubs</th><th class="num"></th></tr>' +
         nl.map(function (c) { return "<tr><td>" + esc(c.name) + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div>" : "") +
       "</div></div>" +
+      '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Club badges</h2><span class="hint">' + noBadge.length + " of " + keys.length + " without one</span></div>" +
+      '<div class="adminbox"><p class="hint" style="margin:0">Premier League and Championship badges arrive with their tables. For everyone else, this looks each club up by name on TheSportsDB and saves the badge it finds. It takes about two seconds a club, and some small clubs won\'t be found, so they keep their initials. Draws you\'ve already saved keep the badges they were saved with.</p>' +
+      '<div class="btnrow"><button type="button" class="btn small" id="bdFind"' + (noBadge.length && auto && !S.badgeRun ? "" : " disabled") + '>Find missing badges</button></div><div id="bdOut">' + (S.badgeReport || "") + "</div></div></div>" +
       (list.length ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Clubs</h2></div><div style="max-height:320px;overflow:auto;padding:0 16px 12px"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Pos</th><th>Club</th><th class="num"></th></tr>' +
-        list.map(function (c) { return "<tr><td>" + c.rank + "</td><td>" + esc(c.name) + (c.rank > NONLEAGUE_RANK ? ' <span class="raw">(not in any division)</span>' : "") + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div></div>" : "");
+        list.map(function (c) { return "<tr><td>" + c.rank + '</td><td><span style="display:inline-flex;align-items:center;gap:8px">' + crestHTML({ crest: reg[c.key].crest, short: c.name }, true) + esc(c.name) + "</span>" + (c.rank > NONLEAGUE_RANK ? ' <span class="raw">(not in any division)</span>' : "") + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div></div>" : "");
   }
 
   // Save a list of {name, short, rank} into the club list and show what changed.
@@ -1121,6 +1125,105 @@ nav.tabs button{padding:10px 11px}
       setTimeout(function () { if (window.__admin.mock && window.__admin.mock.standingsFail) rej(authError("HTTP")); else res({ standings: [{ type: "HOME", table: table.slice().reverse() }, { type: "TOTAL", table: table }] }); }, 40);
     });
   }
+  /* --- Badges for clubs football-data.org doesn't cover, looked up by name through the Worker --- */
+  function getBadge(name) {
+    if (DEMO) {
+      var fake = window.__admin.mock && window.__admin.mock.badgeData;
+      return new Promise(function (res, rej) { setTimeout(function () {
+        if (window.__admin.mock && window.__admin.mock.badgeFail) return rej(authError(window.__admin.mock.badgeFail));
+        res({ query: name, teams: (fake && fake[name]) || [] });
+      }, 15); });
+    }
+    if (!CONFIG.STANDINGS_URL) return Promise.reject(authError("NO_URL"));
+    return fetch(CONFIG.STANDINGS_URL.replace(/\/$/, "") + "/badge?name=" + encodeURIComponent(name)).then(function (r) {
+      if (r.status === 429) throw authError("RATE");
+      if (r.status === 404) throw authError("OLD_WORKER");
+      if (!r.ok) throw authError("HTTP");
+      return r.json();
+    });
+  }
+  // TheSportsDB serves each badge at several sizes; the small one is plenty for the pick screen.
+  function badgeUrl(u) { u = safeUrl(String(u || "").replace(/\/(tiny|small|medium|preview)$/, "")); return u ? u + "/tiny" : ""; }
+  // Choose the right team from a search result. "sure" means the name matches; otherwise it's only a suggestion.
+  function pickBadge(name, teams) {
+    var want = clubKey(name);
+    var ok = (teams || []).filter(function (t) {
+      return badgeUrl(t.badge) && /soccer|football/i.test(t.sport || "Soccer") && /england|wales/i.test(t.country || "England") && !/\b(women|ladies|u\d\d|under[- ]?\d\d|reserves|academy)\b/i.test(t.name);
+    });
+    var exact = ok.filter(function (t) {
+      return clubKey(t.name) === want || String(t.alt || "").split(",").some(function (a) { return a.trim() && clubKey(a) === want; });
+    });
+    if (exact.length) return { team: exact[0], sure: true };
+    if (ok.length === 1) return { team: ok[0], sure: false };
+    return null;
+  }
+  function badgeImg(u) { return '<img src="' + esc(u) + '" alt="" referrerpolicy="no-referrer" style="width:24px;height:24px;object-fit:contain;vertical-align:middle">'; }
+  function badgeReportHTML(rep, running) {
+    var h = "";
+    if (running) h += '<div class="adminsum" style="padding:12px 0">Looking up <b>' + rep.done + "</b> of <b>" + rep.total + "</b>" + (rep.now ? ": " + esc(rep.now) : "") + '\u2026 <button type="button" class="minibtn" id="bdStop">Stop</button></div>';
+    else h += '<div class="adminsum" style="padding:12px 0">' + (rep.stopped ? "Stopped. " : "") + "<b>" + rep.found.length + "</b> badges saved, <b>" + rep.maybe.length + "</b> to check, <b>" + rep.missing.length + "</b> not found.</div>";
+    if (rep.error) h += '<div class="strip stuck">' + esc(rep.error) + "</div>";
+    if (rep.maybe.length) h += '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Possible match, not saved</th><th>Found as</th><th class="num"></th></tr>' +
+      rep.maybe.map(function (m) { return "<tr><td>" + esc(m.name) + "</td><td>" + badgeImg(m.url) + " " + esc(m.as) + (m.league ? ' <span class="raw">' + esc(m.league) + "</span>" : "") +
+        '</td><td class="num"><button type="button" class="minibtn" data-usebadge="' + esc(m.key) + '" data-url="' + esc(m.url) + '">Use it</button></td></tr>'; }).join("") + "</table>";
+    if (rep.found.length) h += '<div style="max-height:260px;overflow:auto"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Saved</th><th>Found as</th><th class="num"></th></tr>' +
+      rep.found.map(function (m) { return "<tr><td>" + esc(m.name) + "</td><td>" + badgeImg(m.url) + " " + esc(m.as) + (m.league ? ' <span class="raw">' + esc(m.league) + "</span>" : "") +
+        '</td><td class="num"><button type="button" class="minibtn" data-rmbadge="' + esc(m.key) + '">Wrong, remove</button></td></tr>'; }).join("") + "</table></div>";
+    if (rep.missing.length && !running) h += '<p class="hint" style="margin:10px 0 0">Not found, so these keep their initials: ' + esc(rep.missing.join(", ")) + ".</p>";
+    return h;
+  }
+  function setBadge(key, url) {
+    var u = {}; u["clubs/" + key + "/crest"] = url || null;
+    return multi(seasonPath(), u).then(function () { if (registry()[key]) { if (url) registry()[key].crest = url; else delete registry()[key].crest; } });
+  }
+  function findBadges() {
+    if (S.badgeRun) return;
+    var reg = registry();
+    var todo = Object.keys(reg).filter(function (k) { return !safeUrl(reg[k].crest); }).sort(function (a, b) { return reg[a].rank - reg[b].rank || reg[a].name.localeCompare(reg[b].name); });
+    if (!todo.length) return note("Every club already has a badge.", "ok");
+    var rep = { total: todo.length, done: 0, now: "", found: [], maybe: [], missing: [], error: "", stopped: false };
+    var run = S.badgeRun = { stop: false }, gap = DEMO ? 5 : 2100, i = 0;
+    $("bdFind").disabled = true;
+    function show(running) { S.badgeReport = badgeReportHTML(rep, running); if ($("bdOut")) $("bdOut").innerHTML = S.badgeReport; }
+    function finish() {
+      S.badgeRun = null; rep.now = ""; S.badgeReport = badgeReportHTML(rep, false);
+      loadSeason().then(function () { renderPositions(); }).catch(function () { show(false); });
+    }
+    // Try the saved name first, then the club's full name if that's different ("MK Dons", then "milton keynes dons").
+    function lookup(key, names, retried) {
+      var q = names[0];
+      return getBadge(q).then(function (data) {
+        var pick = pickBadge(reg[key].name, data.teams);
+        if (!pick && names.length > 1) return wait(gap).then(function () { return lookup(key, names.slice(1), false); });
+        return pick;
+      }, function (e) {
+        if (e && e.code === "RATE" && !retried) { rep.now = "pausing for the lookup limit"; show(true); return wait(DEMO ? 10 : 25000).then(function () { return lookup(key, names, true); }); }
+        throw e;
+      });
+    }
+    function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function next() {
+      if (run.stop) { rep.stopped = true; return finish(); }
+      if (i >= todo.length) return finish();
+      var key = todo[i++], c = reg[key], full = key.replace(/-/g, " "), names = [c.name];
+      if (norm(c.name) !== full) names.push(full);
+      rep.now = c.name; show(true);
+      lookup(key, names, false).then(function (pick) {
+        if (!pick) { rep.missing.push(c.name); return; }
+        var item = { key: key, name: c.name, as: pick.team.name, league: pick.team.league, url: badgeUrl(pick.team.badge) };
+        if (!pick.sure) { rep.maybe.push(item); return; }
+        return setBadge(key, item.url).then(function () { rep.found.push(item); });
+      }).then(function () { rep.done++; return wait(gap); }).then(next, function (e) {
+        rep.error = ({ NO_URL: "The Worker isn't set up, so badges can't be looked up.",
+          OLD_WORKER: "Your Cloudflare Worker doesn't know about badges yet. Paste the new standings-worker.js into it and deploy, then try again.",
+          RATE: "TheSportsDB is still limiting requests. Wait a few minutes and press the button again; it carries on from where it stopped." })[e && e.code] ||
+          (e && e.denied ? errText(e) : "The lookup failed. Check your connection and press the button again; it carries on from where it stopped.");
+        finish();
+      });
+    }
+    next();
+  }
+
   function getStandings(code) {
     if (DEMO) return demoStandings(code);
     if (!CONFIG.STANDINGS_URL) return Promise.reject(authError("NO_URL"));
@@ -1167,6 +1270,7 @@ nav.tabs button{padding:10px 11px}
       if (old && !old.nonLeague && old.rank <= 92) { skipped.push(old.name + " (position " + old.rank + ")"); return; }   // never turn a league club into a non-league one
       if (old) again++; else added++;
       updates["clubs/" + key] = { name: n, short: n, rank: NONLEAGUE_RANK, nonLeague: true };
+      if (registry()[key] && registry()[key].crest) updates["clubs/" + key].crest = registry()[key].crest;
     });
     if (!Object.keys(updates).length) { out.innerHTML = '<div class="strip">All of those are already league clubs: ' + esc(skipped.join(", ")) + ". Nothing saved.</div>"; return; }
     S.busy = true;
@@ -1185,6 +1289,17 @@ nav.tabs button{padding:10px 11px}
     if (e.target.id === "tbClear") clearDivision();
     if (e.target.id === "stLoad") loadStandings();
     if (e.target.id === "nlSave") saveNonLeague();
+    if (e.target.id === "bdFind") findBadges();
+    if (e.target.id === "bdStop" && S.badgeRun) { S.badgeRun.stop = true; e.target.disabled = true; }
+    var useB = e.target.getAttribute && e.target.getAttribute("data-usebadge"), rmB = e.target.getAttribute && e.target.getAttribute("data-rmbadge");
+    if (useB || rmB) {
+      var row = e.target.closest("tr");
+      setBadge(useB || rmB, useB ? e.target.getAttribute("data-url") : null).then(function () {
+        if (row) row.parentNode.removeChild(row);
+        S.badgeReport = $("bdOut") ? $("bdOut").innerHTML : "";
+        note(useB ? "Badge saved." : "Badge removed.", "ok");
+      }).catch(function (er) { note(errText(er), "bad"); });
+    }
     var rm = e.target.getAttribute && e.target.getAttribute("data-rmclub");
     if (rm) {
       var u = {}; u["clubs/" + rm] = null;
