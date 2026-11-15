@@ -908,7 +908,7 @@ nav.tabs button{padding:10px 11px}
       '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Season</h2><span class="hint">' + (has ? "Live season: " + esc(S.sid) : S.newSeason ? "New season" : "No season yet") + "</span></div>" +
       '<div class="adminbox">' +
       '<label><span>Season ID (letters and numbers, no spaces)</span><input id="sId" maxlength="20" value="' + esc(has ? S.sid : "fa2026") + '"' + (has ? " disabled" : "") + "></label>" +
-      '<label><span>Join code players type to join (capital letters and numbers)</span><input id="sCode" maxlength="12" style="text-transform:uppercase;letter-spacing:.2em" value="' + esc(fresh ? "" : (S.season.joinCode || "")) + '"></label>' +
+      '<label><span>Join code players type to join (capital letters and numbers). Joining closes when Round 3 locks.</span><input id="sCode" maxlength="12" style="text-transform:uppercase;letter-spacing:.2em" value="' + esc(fresh ? "" : (S.season.joinCode || "")) + '"></label>' +
       '<div class="cols3"><label><span>Uses per team</span><input id="sMax" type="number" min="1" max="5" value="' + c.maxUses + '"></label>' +
       '<label><span>Points cap</span><input id="sCap" type="number" min="5" max="100" value="' + c.cap + '"></label>' +
       '<label><span>Spread</span><input id="sSpread" type="number" min="5" max="40" value="' + c.spread + '"></label></div>' +
@@ -1554,10 +1554,25 @@ nav.tabs button{padding:10px 11px}
         (st.dead.length ? '<small class="raw" style="display:block;font-family:var(--body)">' + st.dead.length + " locked out</small>" : "") + '</td><td class="num">' + st.status + "</td>" + (sp ? spCell(m, "cup") + spCell(m, "dark") : "") + "</tr>";
     }).join("");
     var overdue = Date.now() >= r.locksAt;
+    // Who still needs chasing, and a message ready to paste into a group chat.
+    var todo = mgrs.filter(function (m) { var st = pickState(m.uid, rid).status; return st === "none yet" || st === "partly"; }).map(function (m) { return m.name; });
+    var spTodo = sp ? mgrs.filter(function (m) { var mine = (sp.picks || {})[m.uid] || {}; return !mine.cup || !mine.dark; }).map(function (m) { return m.name; }) : [];
+    var playUrl = location.href.split(/[?#]/)[0].replace(/[^/]*$/, "");
+    var chase = "Kamikaze FA Cup: " + r.name + " locks " + fmtWhen(r.locksAt) + "." +
+      (todo.length ? " Still to finish their predictions: " + todo.join(", ") + "." : "") +
+      (spTodo.length ? " Still to choose a Cup Winner and Dark Horse: " + spTodo.join(", ") + "." : "") +
+      " Make your picks here: " + playUrl;
+    var chaseBox = !mgrs.length ? "" : (todo.length || spTodo.length)
+      ? '<div class="strip" style="display:block"><b>Still to pick (' + todo.length + "):</b> " + (todo.length ? esc(todo.join(", ")) : "nobody") +
+        (sp ? "<br><b>Season picks missing (" + spTodo.length + "):</b> " + (spTodo.length ? esc(spTodo.join(", ")) : "nobody") : "") + "</div>" +
+        '<label><span>Reminder message, ready to paste into your group chat</span><textarea id="oChase" readonly spellcheck="false" style="min-height:92px">' + esc(chase) + "</textarea></label>" +
+        '<div class="btnrow"><button type="button" class="btn small secondary" id="oChaseCopy">Copy the reminder</button><button type="button" class="btn small secondary" id="oNamesCopy" data-names="' + esc(todo.concat(spTodo.filter(function (n) { return todo.indexOf(n) === -1; })).join(", ")) + '">Copy just the names</button></div>'
+      : '<div class="strip" style="display:block">Everyone has made all their picks' + (sp ? " and season picks" : "") + ". Nobody to chase.</div>";
     return '<div class="panel" style="margin-top:14px"><div class="phead"><h2>' + esc(r.name) + ' is open</h2><span class="hint">Locks ' + esc(fmtWhen(r.locksAt)) + (overdue ? " (time's up)" : "") + "</span></div>" +
       '<div class="adminbox">' + (mgrs.length ? '<table class="rulestable" style="max-width:none;width:100%"><tr><th>Manager</th><th class="num">Picks</th><th class="num">Status</th>' + (sp ? '<th class="num">Cup Winner</th><th class="num">Dark Horse</th>' : "") + "</tr>" + rows + "</table>" : '<p class="hint" style="margin:0">Nobody has joined yet.</p>') +
       '<p class="hint" style="margin:0">Picks are counted out of the ties each manager can actually pick. \u201cLocked out\u201d means both teams in a tie are already used up for them, so nothing can be picked there and it scores 0. Anything else left blank is filled in when you lock: the higher-ranked team, or the other if that one is used up.</p>' +
       (sp ? '<p class="hint" style="margin:0">Cup Winner and Dark Horse are never filled in for a player. A blank one simply earns no bonus. Only you can see these until the round locks.</p>' : "") +
+      chaseBox +
       '<div class="btnrow"><button type="button" class="btn small" id="oRefresh">Refresh</button><button type="button" class="btn small" id="oLock">Lock ' + esc(r.name) + "</button></div>" +
       '<label><span>Change the lock time</span><input id="oExtend" type="datetime-local"></label><div class="btnrow"><button type="button" class="btn small secondary" id="oExtendGo">Save new lock time</button></div>' +
       "</div></div>";
@@ -1663,6 +1678,12 @@ nav.tabs button{padding:10px 11px}
     if (id === "oRefresh") return loadSeason().then(renderRounds);
     if (id === "oLock") return lockRound();
     if (id === "oExtendGo") return extendLock();
+    if (id === "oChaseCopy" || id === "oNamesCopy") {
+      var text = id === "oChaseCopy" ? $("oChase").value : e.target.getAttribute("data-names");
+      var done = function () { note("Copied.", "ok"); }, manual = function () { $("oChase").value = text; $("oChase").focus(); $("oChase").select(); note("Couldn't copy automatically. The text is selected, so press Ctrl+C.", "bad"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, manual); else manual();
+      return;
+    }
     if (id === "rLockAgain") { S.busy = true; return runLockStep(S.round).then(function () { renderAll(); note("Lock step finished.", "ok"); }).catch(function (er) { note(errText(er), "bad"); }).then(function () { S.busy = false; }); }
     if (id === "rSave") return saveResults(false);
     if (id === "rResolve") return saveResults(true);
@@ -1734,6 +1755,7 @@ nav.tabs button{padding:10px 11px}
       '<div class="panel" style="margin-top:18px"><div class="phead"><h2>How it works</h2><span class="hint">Every tie \u00b7 max ' + cfg.maxUses + ' uses per team</span></div><div class="rulesbody">' +
       "<h3>The basics</h3>" +
       "<p>Every round, you predict <b>every tie</b>: pick which team goes through. A correct prediction scores points, a wrong prediction scores <b>0</b>. There are no lives and nobody is eliminated. Most points after the Final wins.</p>" +
+      "<p>You need to <b>join before Round 3 locks</b>. Nobody can join the game after that.</p>" +
       "<p>The one big rule: you can back any one team a <b>maximum of " + cfg.maxUses + " times</b> across the whole Cup. Spend them wisely.</p>" +
       "<h3>How points are worked out</h3>" +
       "<p>Every club is ranked by where it sits in the English pyramid: Premier League 1st to 20th, then the Championship, League One and League Two. Positions are taken from the league tables when each round opens, and don\u2019t change after that, even if the tables move before the games are played. Every club below League Two counts as <b>93rd</b>, so two non-league sides meeting each other is a coin flip.</p>" +

@@ -197,6 +197,10 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 .deadline{margin-top:14px;padding:10px 16px;border:1px solid var(--line-soft);border-radius:12px;background:var(--panel);font-size:14px;color:var(--muted);display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
 .deadline b{color:var(--ink)}
 .deadline.locked b{color:var(--warn)}
+.deadline .dl-big{font-size:15.5px}
+.deadline.soon{border-color:var(--warn)} .deadline.soon b{color:var(--warn)}
+.spwarn{margin-top:14px;padding:10px 14px;border:1px solid var(--warn);border-radius:12px;background:rgba(255,192,67,.08);color:var(--ink);font-size:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.spwarn .btn{flex:0 0 auto}
 .side.won{box-shadow:inset 0 0 0 2px var(--go-dim)}
 .side.lost.picked{box-shadow:inset 0 0 0 2px var(--danger)}
 .side.ro{cursor:default}
@@ -370,6 +374,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
 <main class="wrap">
   <div id="banner"></div>
+  <div id="spWarn" class="spwarn" role="status" hidden><span>You have season picks that aren’t saved yet.</span><button type="button" class="btn small" id="spWarnSave">Save them now</button></div>
   <div id="loading" class="panel" style="margin-top:18px"><div class="empty"><b>Loading</b>Getting your picks.</div></div>
   <div id="errorView" class="panel errorbox" hidden></div>
   <div id="authView" class="panel" style="margin-top:18px" hidden></div>
@@ -615,6 +620,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       } else if ((m = path.match(/^kamikaze_fa\/seasons\/([^/]+)\/managers\/([^/]+)$/))) {
         base = "kamikaze_fa/seasons/" + m[1] + "/";
         if (m[2] !== uid || self.walk(path) != null || value === null) throw denied();
+        if (joinShut(self.walk(base + "rounds/r3"))) throw denied();
         if (Object.keys(value).some(function (k) { return k !== "name" && k !== "code"; })) throw denied();
         if (typeof value.name !== "string" || !NAME_OK.test(value.name)) throw denied();
         if (self.walk(base + "names/" + value.name.toLowerCase()) !== uid) throw denied();
@@ -816,13 +822,20 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
   // The live season can change while a page is open, so ask again whenever someone signs in or joins.
   function refreshSeason() {
-    return db.get("kamikaze_fa/activeSeasonId").then(function (sid) { if (sid) S.sid = sid; }).catch(function () {});
+    return db.get("kamikaze_fa/activeSeasonId").then(function (sid) { if (sid) S.sid = sid; }).catch(function () {}).then(checkJoining);
   }
+  // Nobody can join once Round 3 has locked, or once its deadline has passed. Round details are public, so this needs no sign-in.
+  function joinShut(r3) { return !!r3 && (r3.status === "locked" || r3.status === "resolved" || (r3.status === "open" && Date.now() >= r3.locksAt)); }
+  function checkJoining() {
+    return db.get(P("rounds/r3")).then(function (r3) { S.joinClosed = joinShut(r3); }).catch(function () {});
+  }
+  var JOIN_CLOSED_MSG = "Joining has closed. Round 3 has locked, so no new managers can join this season.";
+  if (DEMO) window.__kfa.recheckJoining = function () { return checkJoining().then(function () { showAuth("signin"); }); };
 
   // Signed in: find out who this account is, then load the game.
   function enter() {
     return refreshSeason().then(function () { return db.get(P("managers/" + AUTH.uid)); }).catch(function () { return null; }).then(function (who) {
-      if (!who) { $("loading").hidden = true; return showAuth("finish", "You're signed in, but you haven't joined the game yet."); }
+      if (!who) { $("loading").hidden = true; return showAuth("finish", S.joinClosed ? "You're signed in, but you didn't join this season. " + JOIN_CLOSED_MSG : "You're signed in, but you haven't joined the game yet."); }
       S.who = who;
       return loadApp();
     });
@@ -836,13 +849,16 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       if (!sid) return fail("No season is running", "The admin hasn't started the FA Cup game yet.");
       S.sid = sid;
       if (RULES_ONLY) return showPublicRules();
+      return checkJoining().then(function () { return startSession(); });
+    }).catch(function () { fail("Couldn't load", "Check your connection and reload the page."); });
+  }
+  function startSession() {
       var sess = loadSession();
       if (!sess || !sess.refreshToken) { $("loading").hidden = true; return showAuth("signin"); }
       AUTH.uid = sess.uid; AUTH.refreshToken = sess.refreshToken; AUTH.email = sess.email;
       return ensureToken().then(enter).catch(function () {
         clearAuth(); clearSession(); $("loading").hidden = true; showAuth("signin", "Please sign in again.");
       });
-    }).catch(function () { fail("Couldn't load", "Check your connection and reload the page."); });
   }
 
   // The rules for anyone with the link: built from the season's public settings, with no sign-in.
@@ -877,30 +893,33 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       INVALID_PASSWORD: "That email and password don't match.", EMAIL_NOT_FOUND: "That email and password don't match.",
       EMAIL_EXISTS: "There's already an account with that email. Sign in instead, or reset your password.",
       WEAK_PASSWORD: "Pick a password of at least 6 characters.", INVALID_EMAIL: "That doesn't look like a valid email address.",
-      API: "The Firebase API key in this page isn't right. Check the API_KEY line at the top of the script.", STALE_SEASON: "The game has moved on to a new season. Reload this page and try again.", TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again.", USER_DISABLED: "This account has been switched off. Ask the admin."
+      API: "The Firebase API key in this page isn't right. Check the API_KEY line at the top of the script.", STALE_SEASON: "The game has moved on to a new season. Reload this page and try again.", JOIN_CLOSED: JOIN_CLOSED_MSG, TOO_MANY_ATTEMPTS_TRY_LATER: "Too many tries. Wait a few minutes and try again.", USER_DISABLED: "This account has been switched off. Ask the admin."
     };
     return map[code] || "Something went wrong. Check your connection and try again.";
   }
 
   function showAuth(mode, note) {
+    if (mode === "join" && S.joinClosed) { mode = "signin"; note = note || JOIN_CLOSED_MSG; }
     authMode = mode;
     $("pickView").hidden = true; $("errorView").hidden = true; $("authView").hidden = false;
     $("meChip").hidden = true; $("signOut").hidden = mode !== "finish"; $("tabs").hidden = true;
     var title = mode === "signin" ? "Sign in" : mode === "join" ? "Join the game" : mode === "reset" ? "Reset your password" : "Finish joining";
     var pills = mode === "finish" || mode === "reset" ? "" :
       '<div class="rounds" style="padding:0" role="group"><button type="button" data-mode="signin" aria-pressed="' + (mode === "signin") + '">Sign in</button>' +
-      '<button type="button" data-mode="join" aria-pressed="' + (mode === "join") + '">Join the game</button></div>';
+      (S.joinClosed ? "" : '<button type="button" data-mode="join" aria-pressed="' + (mode === "join") + '">Join the game</button>') + "</div>";
     var f = "";
     if (mode === "join" || mode === "finish") f += '<label><span>Your name (shown on the table)</span><input id="fName" maxlength="20" autocomplete="nickname" value="' + esc(authDraft.name) + '"></label>';
     if (mode !== "finish") f += '<label><span>Email</span><input id="fEmail" type="email" autocomplete="email" inputmode="email" value="' + esc(authDraft.email) + '"></label>';
     if (mode === "signin" || mode === "join") f += '<label><span>Password' + (mode === "join" ? " (at least 6 characters)" : "") + '</span><input id="fPass" type="password" autocomplete="' + (mode === "join" ? "new-password" : "current-password") + '"></label>';
     if (mode === "join" || mode === "finish") f += '<label><span>Join code (from the admin)</span><input id="fCode" maxlength="12" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:.2em"></label>';
+    if (mode === "finish" && S.joinClosed) f = "";
+    if (mode === "signin" && S.joinClosed && !note) note = "Joining has closed for this season. Managers who already joined can sign in.";
     var go = mode === "signin" ? "Sign in" : mode === "join" ? "Join" : mode === "reset" ? "Send reset link" : "Join";
     var links = mode === "signin" ? '<button type="button" class="linkbtn" data-mode="reset">Forgotten your password?</button><a class="linkbtn" style="text-decoration:none" href="' + esc(pageLink(true)) + '">Read the rules</a>'
       : mode === "reset" ? '<button type="button" class="linkbtn" data-mode="signin">Back to sign in</button>' : "";
     $("authView").innerHTML = '<div class="phead"><h2>' + title + "</h2></div><div class=\"adminbox\">" + pills +
       (mode === "reset" ? '<p style="margin:0;color:var(--muted);font-size:14px">Enter the email you signed up with and we\'ll send you a link to choose a new password. Your picks and history stay exactly as they are.</p>' : "") +
-      f + '<div class="btnrow"><button type="button" class="btn small" id="authGo">' + go + "</button>" + links + "</div>" +
+      f + '<div class="btnrow">' + (mode === "finish" && S.joinClosed ? "" : '<button type="button" class="btn small" id="authGo">' + go + "</button>") + links + "</div>" +
       '<div class="msg" id="authNote" role="status" aria-live="polite">' + esc(note || "") + "</div></div>";
   }
   function authNote(text, ok) { var n = $("authNote"); n.textContent = text; n.style.color = ok ? "var(--go)" : "var(--danger)"; }
@@ -917,7 +936,8 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
         return db.remove(P("names/" + key)).catch(function () {}).then(function () {
           if (!(e && e.denied)) throw e;
           return db.get("kamikaze_fa/activeSeasonId").catch(function () { return S.sid; }).then(function (cur) {
-            throw authError(cur && cur !== S.sid ? "STALE_SEASON" : "BAD_CODE");
+            if (cur && cur !== S.sid) throw authError("STALE_SEASON");
+            return checkJoining().then(function () { throw authError(S.joinClosed ? "JOIN_CLOSED" : "BAD_CODE"); });
           });
         });
       });
@@ -940,12 +960,13 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       return Authn.signIn(email, pass).then(function (j) { setAuth(j); return enter(); })
         .catch(function (e) { authNote(authMsg(e.code)); }).then(function () { busy(false); });
     }
+    if (S.joinClosed) return authNote(JOIN_CLOSED_MSG);
     if (!NAME_OK.test(name)) return authNote("Your name needs 2 to 20 letters, numbers or spaces.");
     if (!code) return authNote("Enter the join code the admin gave you.");
     if (authMode === "join") {
       if (pass.length < 6) return authNote(authMsg("WEAK_PASSWORD"));
       busy(true);
-      return refreshSeason().then(function () { return Authn.signUp(email, pass); }).then(function (j) {
+      return refreshSeason().then(function () { if (S.joinClosed) throw authError("JOIN_CLOSED"); return Authn.signUp(email, pass); }).then(function (j) {
         setAuth(j);
         return claim(name, code).then(enter).catch(function (e) {
           var tok = AUTH.idToken;
@@ -957,7 +978,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       }).catch(function (e) { authNote(authMsg(e.code)); }).then(function () { busy(false); });
     }
     busy(true);   // "finish": already signed in, just needs a name and code
-    return refreshSeason().then(function () { return claim(name, code); }).then(enter).catch(function (e) {
+    return refreshSeason().then(function () { if (S.joinClosed) throw authError("JOIN_CLOSED"); return claim(name, code); }).then(enter).catch(function (e) {
       authNote(e.code === "NAME_TAKEN" ? "That name is already taken. Pick another one." : e.code === "BAD_CODE" ? "That join code isn't right." : authMsg(e.code));
     }).then(function () { busy(false); });
   }
@@ -970,8 +991,10 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   $("authView").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); submitAuth(); } });
 
   $("signOut").addEventListener("click", function () {
+    if (spDirty() && !confirm("Your season picks aren't saved yet. Sign out and lose them?")) return;
+    S.spDraft = null; $("spWarn").hidden = true;
     clearAuth(); clearSession(); S.who = null; S.rounds = []; S.view = null;
-    ["pickView", "tableView", "rulesView"].forEach(function (id) { $(id).hidden = true; });
+    ["pickView", "tableView", "rulesView", "statsView"].forEach(function (id) { $(id).hidden = true; });
     $("signOut").hidden = true; $("meChip").hidden = true; $("tabs").hidden = true; $("msg").textContent = ""; setSave("");
     showAuth("signin", "You've been signed out.");
   });
@@ -1042,6 +1065,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   }
   function renderSpecials() {
     var box = $("specials"), r3 = roundById("r3");
+    spWarnShow();
     if (!S.sp || !r3) { box.innerHTML = ""; return; }
     var clubs = S.sp.clubs, mine = S.sp.picks, c = clubs[mine.cup], d = clubs[mine.dark];
     if (isEditable(r3)) {
@@ -1084,6 +1108,21 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     box.innerHTML = '<div class="panel sp"><div class="phead"><h2>Season picks</h2><span class="hint">' + (locked ? "Locked with Round 3" : "Closing") + '</span></div><div class="spbody">' +
       row("Cup Winner", c, cupText, cupCls) + row("Dark Horse", d, darkText, darkCls) + "</div></div>";
   }
+  // True while there are Cup Winner or Dark Horse choices that haven't been saved.
+  function spDirty() {
+    var r3 = roundById("r3");
+    if (!S.sp || !S.spDraft || !S.who || !r3 || !isEditable(r3)) return false;
+    var mine = S.sp.picks;
+    return (S.spDraft.cup || "") !== (mine.cup || "") || (S.spDraft.dark || "") !== (mine.dark || "");
+  }
+  // The warning bar shows on every tab except the one where the Save button is already in view.
+  function spWarnShow() {
+    var onForm = !$("pickView").hidden && S.view === "r3";
+    $("spWarn").hidden = !spDirty() || onForm;
+  }
+  window.addEventListener("beforeunload", function (e) { if (spDirty()) { e.preventDefault(); e.returnValue = ""; } });
+  $("spWarn").addEventListener("click", function (e) { if (e.target.id === "spWarnSave") saveSpecials(); });
+
   function saveSpecials() {
     var r3 = roundById("r3"); if (!S.sp || !S.spDraft || !r3 || !isEditable(r3)) return;
     var cur = S.spDraft, mine = S.sp.picks, jobs = [];
@@ -1131,13 +1170,22 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     var d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
     return d ? d + "d " + h + "h" : h ? h + "h " + mm + "m" : mm + "m";
   }
+  // The same, in words: "2 days 4 hours", "3 hours 20 minutes", "12 minutes".
+  function fmtLeftWords(ms) {
+    var m = Math.floor(ms / 60000);
+    if (m < 1) return "less than a minute";
+    var d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+    function w(n, unit) { return n + " " + unit + (n === 1 ? "" : "s"); }
+    return d ? w(d, "day") + (h ? " " + w(h, "hour") : "") : h ? w(h, "hour") + (mm ? " " + w(mm, "minute") : "") : w(mm, "minute");
+  }
   function renderDeadline() {
     var r = roundById(S.view), el = $("deadline");
     if (!r) { el.hidden = true; return; }
     el.hidden = false;
     var editable = isEditable(r);
-    el.className = "deadline" + (editable ? "" : " locked");
-    if (editable) el.innerHTML = "<span>Picks lock <b>" + esc(fmtWhen(r.locksAt)) + "</b></span><span><b>" + fmtLeft(r.locksAt - Date.now()) + "</b> left</span>";
+    var left = r.locksAt - Date.now();
+    el.className = "deadline" + (editable ? (left < 86400000 ? " soon" : "") : " locked");
+    if (editable) el.innerHTML = '<span class="dl-big">Locks in <b>' + fmtLeftWords(left) + "</b></span><span>" + esc(fmtWhen(r.locksAt)) + "</span>";
     else if (r.status === "open") el.innerHTML = "<span><b>Time's up.</b> Waiting for the admin to lock the round.</span>";
     else el.innerHTML = "<span><b>" + (r.status === "resolved" ? "Round finished" : "Picks locked") + "</b></span><span>" + esc(fmtWhen(r.locksAt)) + "</span>";
   }
@@ -1360,6 +1408,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       '<div class="panel" style="margin-top:18px"><div class="phead"><h2>How it works</h2><span class="hint">Every tie \u00b7 max ' + cfg.maxUses + ' uses per team</span></div><div class="rulesbody">' +
       "<h3>The basics</h3>" +
       "<p>Every round, you predict <b>every tie</b>: pick which team goes through. A correct prediction scores points, a wrong prediction scores <b>0</b>. There are no lives and nobody is eliminated. Most points after the Final wins.</p>" +
+      "<p>You need to <b>join before Round 3 locks</b>. Nobody can join the game after that.</p>" +
       "<p>The one big rule: you can back any one team a <b>maximum of " + cfg.maxUses + " times</b> across the whole Cup. Spend them wisely.</p>" +
       "<h3>How points are worked out</h3>" +
       "<p>Every club is ranked by where it sits in the English pyramid: Premier League 1st to 20th, then the Championship, League One and League Two. Positions are taken from the league tables when each round opens, and don\u2019t change after that, even if the tables move before the games are played. Every club below League Two counts as <b>93rd</b>, so two non-league sides meeting each other is a coin flip.</p>" +
@@ -1767,6 +1816,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function (x) { x.classList.toggle("on", x === b); });
     if (name === "table") renderTable();
     if (name === "stats") renderStats();
+    spWarnShow();
     window.scrollTo(0, 0);
   });
 
