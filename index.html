@@ -365,6 +365,12 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
   var params = new URLSearchParams(location.search);
   var DEMO = params.get("demo") === "1" || CONFIG.DB_URL.indexOf("YOUR-PROJECT") !== -1;
+  // Adding ?rules to the address shows the rules to anyone, without signing in.
+  var RULES_ONLY = params.has("rules");
+  function pageLink(rulesOnly) {
+    var q = []; if (params.get("demo") === "1") q.push("demo=1"); if (rulesOnly) q.push("rules");
+    return location.href.split(/[?#]/)[0] + (q.length ? "?" + q.join("&") : "");
+  }
   var AUTH = { uid: null, idToken: null, refreshToken: null, exp: 0, email: null };
   var NAME_OK = /^[A-Za-z0-9 ]{2,20}$/;
 
@@ -769,6 +775,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     db.get("kamikaze_fa/activeSeasonId").then(function (sid) {
       if (!sid) return fail("No season is running", "The admin hasn't started the FA Cup game yet.");
       S.sid = sid;
+      if (RULES_ONLY) return showPublicRules();
       var sess = loadSession();
       if (!sess || !sess.refreshToken) { $("loading").hidden = true; return showAuth("signin"); }
       AUTH.uid = sess.uid; AUTH.refreshToken = sess.refreshToken; AUTH.email = sess.email;
@@ -776,6 +783,23 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
         clearAuth(); clearSession(); $("loading").hidden = true; showAuth("signin", "Please sign in again.");
       });
     }).catch(function () { fail("Couldn't load", "Check your connection and reload the page."); });
+  }
+
+  // The rules for anyone with the link: built from the season's public settings, with no sign-in.
+  function showPublicRules() {
+    return Promise.all([
+      db.get("kamikaze_fa_public/seasons/" + S.sid + "/config").catch(function () { return null; }),
+      Promise.all(CONFIG.ROUND_IDS.map(function (id) {
+        return db.get(P("rounds/" + id)).then(function (r) { return r ? { id: id, name: r.name, mult: r.mult, status: r.status } : null; }).catch(function () { return null; });
+      }))
+    ]).then(function (x) {
+      if (x[0]) S.cfg = { maxUses: x[0].maxUses || 3, cap: x[0].cap || 30, spread: x[0].spread || 30, specials: !!x[0].specials };
+      S.rounds = x[1].filter(Boolean);
+      ["loading", "authView", "pickView", "tableView", "errorView"].forEach(function (id) { $(id).hidden = true; });
+      $("tabs").hidden = true; $("meChip").hidden = true; $("signOut").hidden = true;
+      renderRules();
+      $("rulesView").hidden = false;
+    });
   }
 
   function fail(title, text) {
@@ -812,7 +836,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     if (mode === "signin" || mode === "join") f += '<label><span>Password' + (mode === "join" ? " (at least 6 characters)" : "") + '</span><input id="fPass" type="password" autocomplete="' + (mode === "join" ? "new-password" : "current-password") + '"></label>';
     if (mode === "join" || mode === "finish") f += '<label><span>Join code (from the admin)</span><input id="fCode" maxlength="12" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:.2em"></label>';
     var go = mode === "signin" ? "Sign in" : mode === "join" ? "Join" : mode === "reset" ? "Send reset link" : "Join";
-    var links = mode === "signin" ? '<button type="button" class="linkbtn" data-mode="reset">Forgotten your password?</button>'
+    var links = mode === "signin" ? '<button type="button" class="linkbtn" data-mode="reset">Forgotten your password?</button><a class="linkbtn" style="text-decoration:none" href="' + esc(pageLink(true)) + '">Read the rules</a>'
       : mode === "reset" ? '<button type="button" class="linkbtn" data-mode="signin">Back to sign in</button>' : "";
     $("authView").innerHTML = '<div class="phead"><h2>' + title + "</h2></div><div class=\"adminbox\">" + pills +
       (mode === "reset" ? '<p style="margin:0;color:var(--muted);font-size:14px">Enter the email you signed up with and we\'ll send you a link to choose a new password. Your picks and history stay exactly as they are.</p>' : "") +
@@ -1199,6 +1223,14 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     renderSpecials();
     var sel = $("specials").querySelector('[data-sp="' + kind + '"]'); if (sel) sel.focus();
   });
+  // Share the rules: copy a link that opens them without signing in.
+  $("rulesView").addEventListener("click", function (e) {
+    if (e.target.id !== "rulesCopy") return;
+    var link = pageLink(true), out = $("rulesCopied");
+    function shown() { out.textContent = "Link copied. Anyone can open it without signing in."; }
+    function manual() { out.innerHTML = 'Copy this link: <input readonly value="' + esc(link) + '" style="width:min(100%,340px);padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:13px" onfocus="this.select()">'; }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(shown, manual); else manual();
+  });
   $("specials").addEventListener("click", function (e) { if (e.target.id === "spSave") saveSpecials(); });
 
   $("rounds").addEventListener("click", function (e) {
@@ -1261,7 +1293,10 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
         "<p>The pick screen already shows the multiplied points, so there\u2019s nothing to work out.</p>" +
         "<p>The limit of " + cfg.cap + " points on a single pick is applied before the multiplier, so the most one pick can pay also goes up in the later rounds:</p>"
       : "<p>Every round is worth the same this season, so there are no multipliers to worry about.</p>";
-    $("rulesView").innerHTML =
+    var shareBar = RULES_ONLY
+      ? '<div class="btnrow" style="margin:18px 0 0"><a class="btn small" style="text-decoration:none;text-align:center" href="' + esc(pageLink(false)) + '">Sign in or join to play</a></div>'
+      : '<div class="btnrow" style="margin:18px 0 0;align-items:center"><button type="button" class="btn small secondary" id="rulesCopy">Copy a link to these rules</button><span class="spstate" id="rulesCopied" role="status"></span></div>';
+    $("rulesView").innerHTML = shareBar +
       '<div class="panel" style="margin-top:18px"><div class="phead"><h2>How it works</h2><span class="hint">Every tie \u00b7 max ' + cfg.maxUses + ' uses per team</span></div><div class="rulesbody">' +
       "<h3>The basics</h3>" +
       "<p>Every round, you predict <b>every tie</b>: pick which team goes through. A correct prediction scores points, a wrong prediction scores <b>0</b>. There are no lives and nobody is eliminated. Most points after the Final wins.</p>" +
