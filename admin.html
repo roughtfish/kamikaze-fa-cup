@@ -1044,7 +1044,7 @@ nav.tabs button{padding:10px 11px}
         nl.map(function (c) { return "<tr><td>" + esc(c.name) + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div>" : "") +
       "</div></div>" +
       '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Club badges</h2><span class="hint">' + noBadge.length + " of " + keys.length + " without one</span></div>" +
-      '<div class="adminbox"><p class="hint" style="margin:0">Premier League and Championship badges arrive with their tables. For everyone else, this looks each club up by name on TheSportsDB and saves the badge it finds. It takes about two seconds a club, and some small clubs won\'t be found, so they keep their initials. Draws you\'ve already saved keep the badges they were saved with.</p>' +
+      '<div class="adminbox"><p class="hint" style="margin:0">Premier League and Championship badges arrive with their tables. For everyone else, this looks each club up by name on TheSportsDB and saves the badge it finds. It takes about three seconds a club and pauses by itself if TheSportsDB asks it to slow down, and some small clubs won\'t be found, so they keep their initials. Draws you\'ve already saved keep the badges they were saved with.</p>' +
       '<div class="btnrow"><button type="button" class="btn small" id="bdFind"' + (noBadge.length && auto && !S.badgeRun ? "" : " disabled") + '>Find missing badges</button></div><div id="bdOut">' + (S.badgeReport || "") + "</div></div></div>" +
       (list.length ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Clubs</h2></div><div style="max-height:320px;overflow:auto;padding:0 16px 12px"><table class="rulestable" style="max-width:none;width:100%"><tr><th>Pos</th><th>Club</th><th class="num"></th></tr>' +
         list.map(function (c) { return "<tr><td>" + c.rank + '</td><td><span style="display:inline-flex;align-items:center;gap:8px">' + crestHTML({ crest: reg[c.key].crest, short: c.name }, true) + esc(c.name) + "</span>" + (c.rank > NONLEAGUE_RANK ? ' <span class="raw">(not in any division)</span>' : "") + '</td><td class="num"><button type="button" class="minibtn" data-rmclub="' + esc(c.key) + '">Remove</button></td></tr>'; }).join("") + "</table></div></div>" : "");
@@ -1182,7 +1182,7 @@ nav.tabs button{padding:10px 11px}
     var todo = Object.keys(reg).filter(function (k) { return !safeUrl(reg[k].crest); }).sort(function (a, b) { return reg[a].rank - reg[b].rank || reg[a].name.localeCompare(reg[b].name); });
     if (!todo.length) return note("Every club already has a badge.", "ok");
     var rep = { total: todo.length, done: 0, now: "", found: [], maybe: [], missing: [], error: "", stopped: false };
-    var run = S.badgeRun = { stop: false }, gap = DEMO ? 5 : 2100, i = 0;
+    var run = S.badgeRun = { stop: false }, gap = DEMO ? 5 : 3000, i = 0;
     $("bdFind").disabled = true;
     function show(running) { S.badgeReport = badgeReportHTML(rep, running); if ($("bdOut")) $("bdOut").innerHTML = S.badgeReport; }
     function finish() {
@@ -1194,10 +1194,15 @@ nav.tabs button{padding:10px 11px}
       var q = names[0];
       return getBadge(q).then(function (data) {
         var pick = pickBadge(reg[key].name, data.teams);
-        if (!pick && names.length > 1) return wait(gap).then(function () { return lookup(key, names.slice(1), false); });
+        if (!pick && names.length > 1) return wait(gap).then(function () { return lookup(key, names.slice(1), 0); });
         return pick;
       }, function (e) {
-        if (e && e.code === "RATE" && !retried) { rep.now = "pausing for the lookup limit"; show(true); return wait(DEMO ? 10 : 25000).then(function () { return lookup(key, names, true); }); }
+        // TheSportsDB's free key allows only so many lookups a minute. Wait a minute and carry on, up to six times.
+        var tries = retried || 0;
+        if (e && e.code === "RATE" && tries < 6 && !run.stop) {
+          rep.now = "waiting a minute for TheSportsDB's lookup limit, then carrying on with " + reg[key].name; show(true);
+          return wait(DEMO ? 10 : 60000).then(function () { return lookup(key, names, tries + 1); });
+        }
         throw e;
       });
     }
@@ -1208,7 +1213,7 @@ nav.tabs button{padding:10px 11px}
       var key = todo[i++], c = reg[key], full = key.replace(/-/g, " "), names = [c.name];
       if (norm(c.name) !== full) names.push(full);
       rep.now = c.name; show(true);
-      lookup(key, names, false).then(function (pick) {
+      lookup(key, names, 0).then(function (pick) {
         if (!pick) { rep.missing.push(c.name); return; }
         var item = { key: key, name: c.name, as: pick.team.name, league: pick.team.league, url: badgeUrl(pick.team.badge) };
         if (!pick.sure) { rep.maybe.push(item); return; }
@@ -1216,7 +1221,7 @@ nav.tabs button{padding:10px 11px}
       }).then(function () { rep.done++; return wait(gap); }).then(next, function (e) {
         rep.error = ({ NO_URL: "The Worker isn't set up, so badges can't be looked up.",
           OLD_WORKER: "Your Cloudflare Worker doesn't know about badges yet. Paste the new standings-worker.js into it and deploy, then try again.",
-          RATE: "TheSportsDB is still limiting requests. Wait a few minutes and press the button again; it carries on from where it stopped." })[e && e.code] ||
+          RATE: "TheSportsDB kept limiting requests even after waiting several minutes. Try again later; it carries on with the clubs still missing." })[e && e.code] ||
           (e && e.denied ? errText(e) : "The lookup failed. Check your connection and press the button again; it carries on from where it stopped.");
         finish();
       });
