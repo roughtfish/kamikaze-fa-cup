@@ -211,6 +211,8 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 .spd{font-size:13px;color:var(--muted);line-height:1.4}
 .spf select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:16px}
 .spn{font-size:13px;color:var(--go);min-height:1.3em}
+.spstate{font-family:var(--num);font-size:13px;color:var(--go)}
+.spstate.warn{color:var(--warn)}
 .sprow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center}
 .sprow .spl{grid-column:1 / -1;color:var(--faint);font-size:11px}
 .sprow .spc{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);min-width:0}
@@ -666,7 +668,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   if (DEMO) window.__kfa = { db: db, auth: Authn };
 
   /* ---------------- state ---------------- */
-  var S = { sid: null, who: null, cfg: { maxUses: 3, cap: 30, spread: 30, specials: false }, rounds: [], view: null, leaderboard: null, sp: null };
+  var S = { sid: null, who: null, cfg: { maxUses: 3, cap: 30, spread: 30, specials: false }, rounds: [], view: null, leaderboard: null, sp: null, spDraft: null, spSaved: false };
 
   function P(path) { return "kamikaze_fa/seasons/" + S.sid + "/" + path; }
   function roundById(id) { return S.rounds.filter(function (r) { return r.id === id; })[0]; }
@@ -692,6 +694,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
   // quiet = a background refresh: keep the tab and round the person is looking at, unless a new round has opened.
   function loadApp(quiet) {
+    if (!quiet) { S.spDraft = null; S.spSaved = false; }     // a fresh sign-in starts with no unsaved season picks
     var prevOpen = (S.rounds.filter(function (r) { return r.status === "open"; })[0] || {}).id, prevView = S.view;
     return Promise.all([
       db.get("kamikaze_fa_public/seasons/" + S.sid + "/config").catch(function () { return null; }),
@@ -959,13 +962,20 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     var clubs = S.sp.clubs, mine = S.sp.picks, c = clubs[mine.cup], d = clubs[mine.dark];
     if (isEditable(r3)) {
       if (S.view !== "r3") { box.innerHTML = ""; return; }
+      // Choices sit in a draft until the Save button is pressed.
+      var cur = S.spDraft || { cup: mine.cup || "", dark: mine.dark || "" };
+      var dirty = (cur.cup || "") !== (mine.cup || "") || (cur.dark || "") !== (mine.dark || "");
+      var saved = !dirty && (mine.cup || mine.dark);
+      c = clubs[cur.cup]; d = clubs[cur.dark];
       box.innerHTML = '<div class="panel sp"><div class="phead"><h2>Season picks</h2><span class="hint">Lock with Round 3</span></div><div class="spbody">' +
         '<label class="spf"><span class="spl">Cup Winner</span><span class="spd">Who will win the Cup? You get the bonus if they do. The less likely the club, the bigger the bonus.</span>' +
-        '<select data-sp="cup" aria-label="Cup Winner">' + spOptions("cup", mine.cup) + "</select>" +
+        '<select data-sp="cup" aria-label="Cup Winner">' + spOptions("cup", cur.cup) + "</select>" +
         '<span class="spn">' + (c ? esc(c.short) + " (" + rankLabel(c.rank) + "): +" + fmtBonus(c.cup) + " if they win the Cup." : "") + "</span></label>" +
         '<label class="spf"><span class="spl">Dark Horse</span><span class="spd">A club from outside the Premier League. You get its bonus every time it wins a round.</span>' +
-        '<select data-sp="dark" aria-label="Dark Horse">' + spOptions("dark", mine.dark) + "</select>" +
+        '<select data-sp="dark" aria-label="Dark Horse">' + spOptions("dark", cur.dark) + "</select>" +
         '<span class="spn">' + (d ? esc(d.short) + " (" + rankLabel(d.rank) + "): +" + fmtBonus(d.dark) + " for every round they win." : "") + "</span></label>" +
+        '<div class="btnrow" style="align-items:center"><button type="button" class="btn small" id="spSave"' + (dirty ? "" : " disabled") + ">Save season picks</button>" +
+        '<span class="spstate' + (dirty ? " warn" : "") + '" role="status">' + (dirty ? "Not saved yet" : saved ? (S.spSaved ? "Saved" : "Saved earlier") : "") + "</span></div>" +
         "</div></div>";
       return;
     }
@@ -990,19 +1000,26 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     box.innerHTML = '<div class="panel sp"><div class="phead"><h2>Season picks</h2><span class="hint">' + (locked ? "Locked with Round 3" : "Closing") + '</span></div><div class="spbody">' +
       row("Cup Winner", c, cupText, cupCls) + row("Dark Horse", d, darkText, darkCls) + "</div></div>";
   }
-  function saveSpecial(kind, key) {
-    var r3 = roundById("r3"); if (!S.sp || !r3 || !isEditable(r3)) return;
-    var before = S.sp.picks[kind], path = P("specials/picks/" + AUTH.uid + "/" + kind);
-    if (key) S.sp.picks[kind] = key; else delete S.sp.picks[kind];
-    renderSpecials(); saving++; setSave("Saving\u2026"); $("msg").textContent = "";
-    var sel = $("specials").querySelector('[data-sp="' + kind + '"]'); if (sel) sel.focus();
-    (key ? db.put(path, key) : db.remove(path)).then(function () { saving--; if (!saving) setSave("Saved"); }).catch(function (e) {
-      saving--;
-      if (before) S.sp.picks[kind] = before; else delete S.sp.picks[kind];
-      renderSpecials(); setSave("");
+  function saveSpecials() {
+    var r3 = roundById("r3"); if (!S.sp || !S.spDraft || !r3 || !isEditable(r3)) return;
+    var cur = S.spDraft, mine = S.sp.picks, jobs = [];
+    ["cup", "dark"].forEach(function (kind) {
+      if ((cur[kind] || "") === (mine[kind] || "")) return;
+      var path = P("specials/picks/" + AUTH.uid + "/" + kind);
+      jobs.push((cur[kind] ? db.put(path, cur[kind]) : db.remove(path)).then(function () {
+        if (cur[kind]) mine[kind] = cur[kind]; else delete mine[kind];
+      }));
+    });
+    if (!jobs.length) return;
+    var btn = $("spSave"); if (btn) { btn.disabled = true; btn.textContent = "Saving\u2026"; }
+    saving++; $("msg").textContent = "";
+    Promise.all(jobs).then(function () {
+      saving--; S.spDraft = null; S.spSaved = true; renderSpecials();
+    }).catch(function (e) {
+      saving--; renderSpecials();
       $("msg").textContent = e && e.denied
-        ? "That season pick wasn't saved. Round 3 may have just locked. Reload to see where things stand."
-        : "That season pick wasn't saved. Check your connection and try again.";
+        ? "Your season picks weren't saved. Round 3 may have just locked. Reload to see where things stand."
+        : "Your season picks weren't saved. Check your connection and press Save again.";
     });
   }
   function isEditable(round) { return round.status === "open" && Date.now() < round.locksAt; }
@@ -1175,8 +1192,14 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
   $("specials").addEventListener("change", function (e) {
     var kind = e.target.getAttribute && e.target.getAttribute("data-sp");
-    if (kind === "cup" || kind === "dark") saveSpecial(kind, e.target.value);
+    if (kind !== "cup" && kind !== "dark") return;
+    var mine = S.sp.picks;
+    if (!S.spDraft) S.spDraft = { cup: mine.cup || "", dark: mine.dark || "" };
+    S.spDraft[kind] = e.target.value; S.spSaved = false;
+    renderSpecials();
+    var sel = $("specials").querySelector('[data-sp="' + kind + '"]'); if (sel) sel.focus();
   });
+  $("specials").addEventListener("click", function (e) { if (e.target.id === "spSave") saveSpecials(); });
 
   $("rounds").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
