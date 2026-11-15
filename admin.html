@@ -1662,6 +1662,8 @@ nav.tabs button{padding:10px 11px}
       '<div class="adminbox"><div class="btnrow"><button type="button" class="btn small" id="rSave">Save results</button>' +
       (r.status === "locked" ? '<button type="button" class="btn small" id="rResolve"' + (done < ids.length ? " disabled" : "") + ">Mark round finished</button>" : '<button type="button" class="btn small secondary" id="rRecalc">Save and recalculate the table</button>') +
       "</div>" +
+      (S.resultsSaved && S.resultsSaved.rid === rid && !Object.keys(pendingWinners).length ? '<p class="hint" role="status" style="margin:0;color:var(--go)">\u2713 ' + esc(S.resultsSaved.text) + "</p>" : "") +
+      (Object.keys(pendingWinners).length ? '<p class="hint" role="status" style="margin:0;color:var(--warn)">You have changes that aren\u2019t saved yet.</p>' : "") +
       (r.status === "resolved" ? '<p class="hint" style="margin:0">Entered a result wrong? Press the right team above, then Save and recalculate the table. If the round was marked finished too early, reopen it: its points come off the table until you mark it finished again.</p>' +
         '<div class="btnrow"><button type="button" class="btn small secondary" id="rReopen">Reopen this round\u2019s results</button></div>' : "") +
       "</div></div>";
@@ -1677,16 +1679,22 @@ nav.tabs button{padding:10px 11px}
     var rid = S.round, ties = tiesOf(rid), updates = {};
     Logic.tieIds(ties).forEach(function (t) { if (t in pendingWinners) updates["ties/" + rid + "/" + t + "/winner"] = pendingWinners[t]; });
     var r = rounds()[rid];
+    var ids = Logic.tieIds(ties), marked = ids.filter(function (t) { return ties[t].winner; }).length, changed = Object.keys(updates).length;
     if (thenResolve) {
-      var allDone = Logic.tieIds(ties).every(function (t) { return ties[t].winner; });
-      if (!allDone) return note("Mark every tie first.", "bad");
+      if (marked < ids.length) return note("Mark every tie first.", "bad");
+      if (!confirm("Mark " + r.name + " finished? All " + ids.length + " results will be saved and the points added to the table. You can reopen the round afterwards if a result is wrong.")) return;
       updates["rounds/" + rid + "/status"] = "resolved";
+    } else if (r.status === "resolved") {
+      if (!confirm("Save these results and recalculate the table? " + (changed ? changed + (changed === 1 ? " result has" : " results have") + " changed." : "No results have changed.") + " Players will see the new scores straight away.")) return;
+    } else {
+      if (!confirm("Save these results? " + marked + " of " + ids.length + " ties are marked. The round stays open for results and no points are added yet.")) return;
     }
+    var savedMsg = thenResolve ? r.name + " finished and the table is updated." : r.status === "resolved" ? "Results saved and the table recalculated." : "Results saved: " + marked + " of " + ids.length + " ties marked.";
     S.busy = true;
     multi(seasonPath(), updates).then(function () { pendingWinners = {}; return loadSeason(); }).then(function () {
       var needTable = thenResolve || r.status === "resolved";
       return needTable ? publishLeaderboard() : null;
-    }).then(function () { renderAll(); note(thenResolve ? r.name + " finished and the table is updated." : "Results saved.", "ok"); })
+    }).then(function () { S.resultsSaved = { rid: rid, text: savedMsg + " Saved at " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "." }; renderAll(); note(savedMsg, "ok"); })
       .catch(function (e) { note(errText(e), "bad"); loadSeason().then(renderAll); }).then(function () { S.busy = false; });
   }
   // Undo "Mark round finished": back to locked, with its points taken off the table. Picks stay locked and results are kept.
