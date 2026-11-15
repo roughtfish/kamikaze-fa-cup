@@ -1712,8 +1712,8 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     var auto = stAutopilot(D), tiePts = {};
     D.mans.forEach(function (n) { tiePts[n] = stSum(stOf(D, n), function (p) { return p.pts || 0; }); });
     var beating = D.mans.filter(function (n) { return tiePts[n] > auto + 1e-9; });
-    var out = stPanel("Beating the autopilot", "", stNote("A manager who never made a prediction, and left every tie to the automatic pick, would have <b>" + fmt1(auto) + "</b> points from ties. That would put them <b>" + ord(beating.length + 1) + "</b> of " + (D.mans.length + 1) + ". " +
-      (beating.length ? beating.length + " of " + D.mans.length + " managers are beating it: " + beating.sort(function (a, b) { return tiePts[b] - tiePts[a]; }).map(stName).join(", ") + "." : "Nobody is beating it yet.") + " Season picks aren't counted here."));
+    var out = stPanel("Beating Q", "", stNote("Q never makes a prediction and leaves every tie to the automatic pick. Q would have <b>" + fmt1(auto) + "</b> points from ties, which would put Q <b>" + ord(beating.length + 1) + "</b> of " + (D.mans.length + 1) + ". " +
+      (beating.length ? beating.length + " of " + D.mans.length + " managers are beating Q: " + beating.sort(function (a, b) { return tiePts[b] - tiePts[a]; }).map(stName).join(", ") + "." : "Nobody is beating Q yet.") + " Season picks aren't counted here."));
     var st = stStyleRows(D), awards = [];
     function best(list, f, min) { var top = null; list.forEach(function (r) { var v = f(r); if (v === null || v === undefined || isNaN(v)) return; if (!top || v > top.v) top = { v: v, n: [r.n] }; else if (v === top.v) top.n.push(r.n); }); return top && top.v > (min || 0) ? top : null; }
     var gk = null; D.picks.forEach(function (p) { if (p.won && p.dog && (!gk || p.gap > gk.gap)) gk = p; });
