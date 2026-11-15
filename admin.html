@@ -921,7 +921,37 @@ nav.tabs button{padding:10px 11px}
       '<div class="btnrow"><button type="button" class="btn small" id="sSave">' + (has ? "Save changes" : "Create the season") + "</button>" +
       (has ? '<button type="button" class="btn small secondary" id="sNew">Start a new season</button>' : (S.sid ? '<button type="button" class="btn small secondary" id="sCancelNew">Cancel</button>' : "")) + "</div>" +
       "</div></div>" +
+      (has ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Backup</h2><span class="hint" id="bkLast">' + esc(lastBackupText()) + "</span></div>" +
+        '<div class="adminbox"><p class="hint" style="margin:0">Download a copy of this season before you open or lock a round, or enter results. If something goes wrong, the copy can be put back. ' +
+        "The game data file holds every manager\u2019s name and picks and the join code, so keep it to yourself. It has no email addresses or passwords.</p>" +
+        '<div class="btnrow"><button type="button" class="btn small" id="bkGame">Download game data</button><button type="button" class="btn small secondary" id="bkPub">Download published data</button></div>' +
+        '<details><summary class="hint" style="cursor:pointer">How to put a backup back</summary><div class="rulesbody" style="padding:8px 0 0"><p>Restoring is done in the Firebase console, which can replace the data in one go:</p>' +
+        '<ul class="ruleslist"><li>Open the Firebase console, then <b>Realtime Database</b>, then the <b>Data</b> tab.</li>' +
+        "<li>Click through to <code>kamikaze_fa</code>, <code>seasons</code>, <code>" + esc(S.sid) + "</code>. With that row selected, open the three-dot menu and choose <b>Import JSON</b>. Pick the <b>game data</b> file.</li>" +
+        "<li>Do the same at <code>kamikaze_fa_public</code>, <code>seasons</code>, <code>" + esc(S.sid) + "</code> with the <b>published data</b> file.</li>" +
+        '<li>Importing replaces everything at the row you chose, so check you are on the season row and not higher up.</li></ul></div></details></div></div>' : "") +
       (has ? '<div class="panel" style="margin-top:16px"><div class="phead"><h2>Your details</h2></div><div class="rulesbody"><p>Signed in as <b>' + esc(AUTH.email || "") + "</b>.<br>User ID: <code>" + esc(AUTH.uid || "") + "</code></p></div></div>" : "");
+  }
+
+  /* --- backup: download the season as files that Firebase's Import JSON can put back --- */
+  function lastBackupText() {
+    var t = 0; try { t = Number(localStorage.getItem("kfa_backup_" + S.sid)) || 0; } catch (e) {}
+    return t ? "Last downloaded " + fmtWhen(t) : "Not downloaded on this device yet";
+  }
+  function stamp() { var d = new Date(), z = function (n) { return (n < 10 ? "0" : "") + n; }; return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "-" + z(d.getHours()) + z(d.getMinutes()); }
+  function downloadJson(name, data) {
+    var url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
+    var a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  }
+  function backup(kind) {
+    var path = kind === "game" ? seasonPath() : "kamikaze_fa_public/seasons/" + S.sid, sid = S.sid;
+    db.get(path).then(function (data) {
+      if (!data) return note("There's nothing to back up there yet.", "bad");
+      downloadJson("kamikaze-fa-" + sid + "-" + (kind === "game" ? "game" : "published") + "-" + stamp() + ".json", data);
+      if (kind === "game") { try { localStorage.setItem("kfa_backup_" + sid, String(Date.now())); } catch (e) {} if ($("bkLast")) $("bkLast").textContent = lastBackupText(); }
+      note((kind === "game" ? "Game data" : "Published data") + " downloaded.", "ok");
+    }).catch(function (e) { note(errText(e), "bad"); });
   }
 
   function saveSeason() {
@@ -952,6 +982,8 @@ nav.tabs button{padding:10px 11px}
     if (e.target.id === "sSave") saveSeason();
     if (e.target.id === "sNew") { S.newSeason = true; renderSeason(); }
     if (e.target.id === "sCancelNew") { S.newSeason = false; renderSeason(); }
+    if (e.target.id === "bkGame") backup("game");
+    if (e.target.id === "bkPub") backup("pub");
   });
 
   /* ---------------- Positions tab ---------------- */
@@ -1629,7 +1661,10 @@ nav.tabs button{padding:10px 11px}
       '<p class="hint" style="padding:12px 16px 0;margin:0">Tap the team that went through. Extra time and penalties count. Tap again to clear.</p>' + '<div style="margin-top:8px">' + rows + "</div>" +
       '<div class="adminbox"><div class="btnrow"><button type="button" class="btn small" id="rSave">Save results</button>' +
       (r.status === "locked" ? '<button type="button" class="btn small" id="rResolve"' + (done < ids.length ? " disabled" : "") + ">Mark round finished</button>" : '<button type="button" class="btn small secondary" id="rRecalc">Save and recalculate the table</button>') +
-      "</div></div></div>";
+      "</div>" +
+      (r.status === "resolved" ? '<p class="hint" style="margin:0">Entered a result wrong? Press the right team above, then Save and recalculate the table. If the round was marked finished too early, reopen it: its points come off the table until you mark it finished again.</p>' +
+        '<div class="btnrow"><button type="button" class="btn small secondary" id="rReopen">Reopen this round\u2019s results</button></div>' : "") +
+      "</div></div>";
   }
   var pendingWinners = {};
   function toggleWinner(t, side) {
@@ -1652,6 +1687,15 @@ nav.tabs button{padding:10px 11px}
       var needTable = thenResolve || r.status === "resolved";
       return needTable ? publishLeaderboard() : null;
     }).then(function () { renderAll(); note(thenResolve ? r.name + " finished and the table is updated." : "Results saved.", "ok"); })
+      .catch(function (e) { note(errText(e), "bad"); loadSeason().then(renderAll); }).then(function () { S.busy = false; });
+  }
+  // Undo "Mark round finished": back to locked, with its points taken off the table. Picks stay locked and results are kept.
+  function reopenResults() {
+    var rid = S.round, r = rounds()[rid];
+    if (!confirm("Reopen " + r.name + "? Its points come off the table until you mark it finished again. Picks stay locked and the results you entered are kept.")) return;
+    S.busy = true;
+    db.put(seasonPath() + "/rounds/" + rid + "/status", "locked").then(loadSeason).then(publishLeaderboard)
+      .then(function () { pendingWinners = {}; renderAll(); note(r.name + " is reopened. Correct the results, then mark it finished again.", "ok"); })
       .catch(function (e) { note(errText(e), "bad"); loadSeason().then(renderAll); }).then(function () { S.busy = false; });
   }
   function publishLeaderboard() {
@@ -1688,6 +1732,7 @@ nav.tabs button{padding:10px 11px}
     if (id === "rSave") return saveResults(false);
     if (id === "rResolve") return saveResults(true);
     if (id === "rRecalc") return saveResults(false);
+    if (id === "rReopen") return reopenResults();
     var act = t.getAttribute && t.getAttribute("data-act");
     if (act && S.draw) {
       var i = parseInt(t.getAttribute("data-i"), 10), k = t.getAttribute("data-k"), sd = S.draw.ties[i][k];
