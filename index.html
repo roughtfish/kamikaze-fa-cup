@@ -1317,11 +1317,12 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       '<h3>Team limits <span class="rulestag">' + cfg.maxUses + " per team</span></h3>" +
       "<p>You can back any one team a <b>maximum of " + cfg.maxUses + " times</b> across the whole Cup. A pick counts as a use when the round locks, whether or not the team goes through. Once a team is used up it\u2019s banned for you, although other managers can still pick it.</p>" +
       '<ul class="ruleslist"><li>If one team in a tie is used up, you have to back the other.</li><li>If <b>both</b> teams in a tie are used up, there\u2019s no pick and that tie scores 0.</li></ul>' +
-      (cfg.specials ? "<h3>Season picks</h3>" +
+      ("<h3>Season picks</h3>" +
+        (cfg.specials ? "" : '<p class="note">Season picks are switched off for the current season, so this section doesn\u2019t apply to it.</p>') +
         "<p>Before Round 3 locks, you also make two picks that last the whole Cup. They can\u2019t be changed once Round 3 locks, and other managers can\u2019t see them until then.</p>" +
         '<ul class="ruleslist"><li><b>Cup Winner:</b> name the club you think will win the Cup. If it does, you get its bonus. The bonus runs from <b>+3</b> for the league leaders up to <b>+30</b> for a long shot.</li>' +
         "<li><b>Dark Horse:</b> name one club from outside the Premier League. You get its bonus <b>every time it wins a round</b>, from <b>+1</b> a round for the top of the Championship up to <b>+4</b> a round for a non-league side.</li></ul>" +
-        '<p class="note">Each club\u2019s bonus is shown next to its name when you choose, and it is fixed from the league positions on the day Round 3 opens. These picks don\u2019t count towards your ' + cfg.maxUses + " uses of a team, and a pick left blank simply earns nothing.</p>" : "") +
+        '<p class="note">Each club\u2019s bonus is shown next to its name when you choose, and it is fixed from the league positions on the day Round 3 opens. These picks don\u2019t count towards your ' + cfg.maxUses + " uses of a team, and a pick left blank simply earns nothing.</p>") +
       "<h3>Extra time, penalties and replays</h3><p>A team counts as going through if it wins the tie by any route: in normal time, extra time, on penalties, or in a replay if one is played. Only who progresses matters, never the score.</p>" +
       "<h3>Missed picks</h3><p>If you haven\u2019t predicted a tie before the round locks, it\u2019s auto-assigned to the <b>higher-ranked team</b>, and it uses up one of that team\u2019s picks like any other prediction. It scores exactly as if you\u2019d chosen it.</p>" +
       '<ul class="ruleslist"><li>If the higher-ranked team is used up, the other team is picked instead.</li><li>If both teams are used up, the tie scores 0.</li><li>If the two clubs are ranked the same (two non-league sides), the home team is picked.</li></ul>' +
