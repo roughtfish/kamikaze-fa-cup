@@ -1630,13 +1630,20 @@ nav.tabs button{padding:10px 11px}
       var picksNow = fresh || {}, plan = Logic.planLock(S.season, rid, picksNow);
       S.lockReport = plan.report;
       return multi(seasonPath(), plan.updates).then(function () {
-        var merged = Logic.mergedPicks(S.season, rid, picksNow, plan.updates), pub = {}, ties = tiesOf(rid), tieNames = {};
+        var merged = Logic.mergedPicks(S.season, rid, picksNow, plan.updates), pub = {}, pubAuto = {}, ties = tiesOf(rid), tieNames = {};
         Logic.tieIds(ties).forEach(function (t) { tieNames[t] = { home: ties[t].home.short, away: ties[t].away.short }; });
         Object.keys(merged).forEach(function (uid) {
           var m = managers()[uid]; if (!m) return;
-          pub[m.name] = {}; Object.keys(merged[uid]).forEach(function (t) { pub[m.name][t] = merged[uid][t].side; });
+          pub[m.name] = {};
+          Object.keys(merged[uid]).forEach(function (t) {
+            var pk = merged[uid][t]; pub[m.name][t] = pk.side;
+            // filled in at the lock (left blank, or over the limit and replaced), not chosen by the manager
+            if ((pk.auto || pk.overridden) && Logic.validSide(pk)) { (pubAuto[m.name] = pubAuto[m.name] || {})[t] = true; }
+          });
         });
-        return db.put("kamikaze_fa_public/seasons/" + S.sid + "/rounds/" + rid, { name: rounds()[rid].name, ties: tieNames, picks: pub });
+        var out = { name: rounds()[rid].name, ties: tieNames, picks: pub };
+        if (Object.keys(pubAuto).length) out.auto = pubAuto;
+        return db.put("kamikaze_fa_public/seasons/" + S.sid + "/rounds/" + rid, out);
       }).then(function () {
         var u = {}; u["rounds/" + rid + "/filled"] = true; u["rounds/" + rid + "/lockedAt"] = Date.now();
         return multi(seasonPath(), u);

@@ -208,6 +208,14 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 .res.ok{color:var(--go)} .res.no{color:var(--danger)} .res.wait{color:var(--faint)}
 .autoline{padding:8px 14px;font-size:13px;color:var(--muted);border-top:1px solid var(--line-soft)}
 .autoline b{color:var(--ink)}
+.backers{padding:9px 14px 10px;font-size:13px;color:var(--muted);border-top:1px solid var(--line-soft);line-height:1.45}
+.backers summary{cursor:pointer;color:var(--muted)}
+.backers[open] summary{margin-bottom:6px}
+.bk-line{display:grid;grid-template-columns:minmax(0,34%) minmax(0,1fr);gap:10px;padding:2px 0}
+.bk-team{color:var(--ink);font-weight:600;overflow-wrap:anywhere}
+.bk-n{font-family:var(--num);font-weight:400;color:var(--faint);font-size:12px}
+.backers b{color:var(--go);font-weight:600}
+.bk-auto{font-family:var(--disp);text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:0 3px}
 .sp{margin:14px 0}
 .spbody{padding:12px 16px 14px;display:grid;gap:14px}
 .spf{display:grid;gap:5px}
@@ -425,8 +433,11 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   var DEMO = params.get("demo") === "1" || CONFIG.DB_URL.indexOf("YOUR-PROJECT") !== -1;
   // Adding ?rules to the address shows the rules to anyone, without signing in.
   var RULES_ONLY = params.has("rules");
-  function pageLink(rulesOnly) {
-    var q = []; if (params.get("demo") === "1") q.push("demo=1"); if (rulesOnly) q.push("rules");
+  // ...and ?table shows the leaderboard the same way.
+  var TABLE_ONLY = !RULES_ONLY && params.has("table");
+  function pageLink(mode) {
+    if (mode === true) mode = "rules";
+    var q = []; if (params.get("demo") === "1") q.push("demo=1"); if (mode) q.push(mode);
     return location.href.split(/[?#]/)[0] + (q.length ? "?" + q.join("&") : "");
   }
   var AUTH = { uid: null, idToken: null, refreshToken: null, exp: 0, email: null };
@@ -723,7 +734,8 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
             "Demo Manager": mine3, "Sam": { t01: "away", t02: "away", t03: "home", t04: "away", t05: "home", t06: "home" },
             "Dave": { t01: "home", t02: "away", t03: "away", t04: "away", t05: "home", t06: "away" }, "Priya": { t01: "home", t02: "home", t03: "home", t04: "home", t05: "away", t06: "home" } } },
           r4: { name: "Round 4", picks: {
-            "Demo Manager": mine4, "Sam": { t01: "home", t02: "home", t03: "home" }, "Dave": { t01: "none", t02: "away", t03: "away" }, "Priya": { t01: "away", t02: "home", t03: "home" } } }
+            "Demo Manager": mine4, "Sam": { t01: "home", t02: "home", t03: "home" }, "Dave": { t01: "none", t02: "away", t03: "away" }, "Priya": { t01: "away", t02: "home", t03: "home" } },
+            auto: { "Priya": { t02: true, t03: true } } }
         },
         config: cfg,
         leaderboard: [
@@ -740,7 +752,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   if (DEMO) window.__kfa = { db: db, auth: Authn };
 
   /* ---------------- state ---------------- */
-  var S = { sid: null, who: null, cfg: { maxUses: 3, cap: 30, spread: 30, specials: false }, rounds: [], view: null, leaderboard: null, sp: null, spDraft: null, spSaved: false };
+  var S = { sid: null, who: null, cfg: { maxUses: 3, cap: 30, spread: 30, specials: false }, rounds: [], view: null, leaderboard: null, sp: null, spDraft: null, spSaved: false, pub: {} };
 
   function P(path) { return "kamikaze_fa/seasons/" + S.sid + "/" + path; }
   function roundById(id) { return S.rounds.filter(function (r) { return r.id === id; })[0]; }
@@ -766,7 +778,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
 
   // quiet = a background refresh: keep the tab and round the person is looking at, unless a new round has opened.
   function loadApp(quiet) {
-    if (!quiet) { S.spDraft = null; S.spSaved = false; ST.data = null; ST.round = null; ST.focus = ""; ST.a = ""; ST.b = ""; }     // a fresh sign-in starts with no unsaved season picks
+    if (!quiet) { S.pub = {}; S.spDraft = null; S.spSaved = false; ST.data = null; ST.round = null; ST.focus = ""; ST.a = ""; ST.b = ""; }     // a fresh sign-in starts with no unsaved season picks
     var prevOpen = (S.rounds.filter(function (r) { return r.status === "open"; })[0] || {}).id, prevView = S.view;
     return Promise.all([
       db.get("kamikaze_fa_public/seasons/" + S.sid + "/config").catch(function () { return null; }),
@@ -849,6 +861,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       if (!sid) return fail("No season is running", "The admin hasn't started the FA Cup game yet.");
       S.sid = sid;
       if (RULES_ONLY) return showPublicRules();
+      if (TABLE_ONLY) return showPublicTable();
       return checkJoining().then(function () { return startSession(); });
     }).catch(function () { fail("Couldn't load", "Check your connection and reload the page."); });
   }
@@ -859,6 +872,14 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       return ensureToken().then(enter).catch(function () {
         clearAuth(); clearSession(); $("loading").hidden = true; showAuth("signin", "Please sign in again.");
       });
+  }
+
+  // The leaderboard for anyone with the link. It is already public data, so this needs no sign-in.
+  function showPublicTable() {
+    ["loading", "authView", "pickView", "rulesView", "statsView", "errorView"].forEach(function (id) { $(id).hidden = true; });
+    $("tabs").hidden = true; $("meChip").hidden = true; $("signOut").hidden = true;
+    $("tableView").hidden = false;
+    renderTable();
   }
 
   // The rules for anyone with the link: built from the season's public settings, with no sign-in.
@@ -915,7 +936,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     if (mode === "finish" && S.joinClosed) f = "";
     if (mode === "signin" && S.joinClosed && !note) note = "Joining has closed for this season. Managers who already joined can sign in.";
     var go = mode === "signin" ? "Sign in" : mode === "join" ? "Join" : mode === "reset" ? "Send reset link" : "Join";
-    var links = mode === "signin" ? '<button type="button" class="linkbtn" data-mode="reset">Forgotten your password?</button><a class="linkbtn" style="text-decoration:none" href="' + esc(pageLink(true)) + '">Read the rules</a>'
+    var links = mode === "signin" ? '<button type="button" class="linkbtn" data-mode="reset">Forgotten your password?</button><a class="linkbtn" style="text-decoration:none" href="' + esc(pageLink("rules")) + '">Read the rules</a><a class="linkbtn" style="text-decoration:none" href="' + esc(pageLink("table")) + '">See the table</a>'
       : mode === "reset" ? '<button type="button" class="linkbtn" data-mode="signin">Back to sign in</button>' : "";
     $("authView").innerHTML = '<div class="phead"><h2>' + title + "</h2></div><div class=\"adminbox\">" + pills +
       (mode === "reset" ? '<p style="margin:0;color:var(--muted);font-size:14px">Enter the email you signed up with and we\'ll send you a link to choose a new password. Your picks and history stay exactly as they are.</p>' : "") +
@@ -1233,6 +1254,32 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       '<span class="chance">' + fmtChance(p) + " to go through</span>" + usesRow + tag + res + "</button>";
   }
 
+  // Once a round has locked, everyone's picks for it are published. Fetch them once and show who backed whom.
+  function loadPublished(round) {
+    var rid = round.id;
+    if (S.pub[rid] || !(round.status === "locked" || round.status === "resolved")) return;
+    S.pub[rid] = { loading: true };
+    db.get("kamikaze_fa_public/seasons/" + S.sid + "/rounds/" + rid).then(function (pub) {
+      S.pub[rid] = pub && pub.picks ? pub : { none: true };
+      if (S.view === rid && !$("pickView").hidden) renderPick();
+    }).catch(function () { delete S.pub[rid]; });
+  }
+  function backersHTML(round, tid, tie) {
+    var pub = S.pub[round.id]; if (!pub || !pub.picks) return "";
+    var by = { home: [], away: [], none: [] }, me = S.who && S.who.name, total = 0;
+    Object.keys(pub.picks).sort(function (a, b) { return a.localeCompare(b); }).forEach(function (n) {
+      var s = (pub.picks[n] || {})[tid]; if (!s) return;
+      var auto = ((pub.auto || {})[n] || {})[tid];
+      (by[s === "home" || s === "away" ? s : "none"]).push((n === me ? "<b>You</b>" : esc(n)) + (auto ? ' <span class="bk-auto">auto</span>' : "")); total++;
+    });
+    if (!total) return "";
+    function line(k, label) { return by[k].length ? '<div class="bk-line"><span class="bk-team">' + label + ' <span class="bk-n">' + by[k].length + "</span></span><span>" + by[k].join(", ") + "</span></div>" : ""; }
+    var body = line("home", esc(tie.home.short)) + line("away", esc(tie.away.short)) + line("none", "No team left");
+    // A small league shows the names straight away; a big one keeps the cards short until tapped.
+    if (total <= 8) return '<div class="backers">' + body + "</div>";
+    return '<details class="backers"><summary>Who backed whom: ' + esc(tie.home.short) + " " + by.home.length + ", " + esc(tie.away.short) + " " + by.away.length + "</summary>" + body + "</details>";
+  }
+
   function stripHTML(tie, used, editable) {
     if (!editable) return "";
     var mx = S.cfg.maxUses, h = (used[clubOf(tie, "home")] || 0) >= mx, a = (used[clubOf(tie, "away")] || 0) >= mx;
@@ -1251,6 +1298,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       return;
     }
     var editable = isEditable(round), used = usedBefore(round.id), ids = tieIds(round);
+    loadPublished(round);
     renderDeadline();
     var html = "", called = 0, needed = 0, potential = 0;
     ids.forEach(function (tid) {
@@ -1266,7 +1314,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
         if (ch) autoLine = '<div class="autoline">If you leave this, we\'ll pick <b>' + esc(tie[ch].short) + "</b> for you.</div>";
       }
       html += '<li class="tie' + (editable && pk ? " done" : "") + '">' + stripHTML(tie, used, editable) + '<div class="sides">' +
-        sideHTML(round, tid, "home", tie, editable, used) + sideHTML(round, tid, "away", tie, editable, used) + "</div>" + autoLine + "</li>";
+        sideHTML(round, tid, "home", tie, editable, used) + sideHTML(round, tid, "away", tie, editable, used) + "</div>" + autoLine + (editable ? "" : backersHTML(round, tid, tie)) + "</li>";
     });
     if (!ids.length) html = '<li class="tie"><div class="empty"><b>No ties yet</b>The admin is still adding this round.</div></li>';
     $("ties").innerHTML = html;
@@ -1331,6 +1379,13 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     renderSpecials();
     var sel = $("specials").querySelector('[data-sp="' + kind + '"]'); if (sel) sel.focus();
   });
+  $("tableView").addEventListener("click", function (e) {
+    if (e.target.id !== "tableCopy") return;
+    var link = pageLink("table"), out = $("tableCopied");
+    function shown() { ($("tableCopied") || out).textContent = "Link copied. Anyone can open it without signing in."; }
+    function manual() { out.innerHTML = 'Copy this link: <input readonly value="' + esc(link) + '" style="width:min(100%,340px);padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:13px" onfocus="this.select()">'; }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(shown, manual); else manual();
+  });
   // Share the rules: copy a link that opens them without signing in.
   $("rulesView").addEventListener("click", function (e) {
     if (e.target.id !== "rulesCopy") return;
@@ -1350,8 +1405,11 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   /* ---------------- table (leaderboard) ---------------- */
   function fmt1(x) { return Number(x).toFixed(1); }
   function renderTable() {
-    var box = $("tableView");
-    box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Leaderboard</h2></div><div class="empty"><b>Loading</b></div></div>';
+    var box = $("tableView"), meName = S.who ? S.who.name : null;
+    var bar = TABLE_ONLY
+      ? '<div class="btnrow" style="margin:18px 0 0;align-items:center"><a class="btn small" style="text-decoration:none;text-align:center" href="' + esc(pageLink("")) + '">Sign in or join to play</a><a class="linkbtn" style="text-decoration:none" href="' + esc(pageLink("rules")) + '">Read the rules</a></div>'
+      : '<div class="btnrow" style="margin:18px 0 0;align-items:center"><button type="button" class="btn small secondary" id="tableCopy">Copy a link to this table</button><span class="spstate" id="tableCopied" role="status"></span></div>';
+    box.innerHTML = bar + '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Leaderboard</h2></div><div class="empty"><b>Loading</b></div></div>';
     db.get("kamikaze_fa_public/seasons/" + S.sid + "/leaderboard").then(function (lb) {
       var rows = lb ? (Array.isArray(lb) ? lb : Object.keys(lb).map(function (k) { return lb[k]; })) : [];
       rows = rows.filter(Boolean).sort(function (a, b) { return b.points - a.points; });
@@ -1361,11 +1419,11 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       var top = {}; ids.forEach(function (id) { top[id] = Math.max.apply(null, rows.map(function (r) { return (r.rounds && r.rounds[id]) || 0; })); });
       var sp = rows.some(function (r) { return r.cupClub || r.darkClub; });
       function spTd(pts, club) { return '<td class="n' + (pts ? " top" : "") + '">' + (club ? (pts ? fmt1(pts) : "0") + "<small>" + esc(club) + "</small>" : "-") + "</td>"; }
-      box.innerHTML = '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Leaderboard</h2>' + (ids.length ? '<span class="hint">Points in each finished round</span>' : "") + '</div><div class="lbwrap">' +
+      box.innerHTML = bar + '<div class="panel" style="margin-top:18px"><div class="phead"><h2>Leaderboard</h2>' + (ids.length ? '<span class="hint">Points in each finished round</span>' : "") + '</div><div class="lbwrap">' +
         '<table class="lbtable"><tr><th class="sticky s1">#</th><th class="sticky s2">Manager</th><th class="n total">Total</th>' +
         ids.map(function (id) { return '<th class="n">' + LB_LABEL[id] + "</th>"; }).join("") + (sp ? '<th class="n">Cup Winner</th><th class="n">Dark Horse</th>' : "") + '<th class="n">Correct</th><th class="n">Biggest gap</th></tr>' +
         rows.map(function (r, i) {
-          return '<tr class="' + (r.name === S.who.name ? "me" : "") + '"><td class="pos sticky s1">' + (i + 1) + '</td><td class="sticky s2">' + esc(r.name) + '</td><td class="n total">' + fmt1(r.points || 0) + "</td>" +
+          return '<tr class="' + (r.name === meName ? "me" : "") + '"><td class="pos sticky s1">' + (i + 1) + '</td><td class="sticky s2">' + esc(r.name) + '</td><td class="n total">' + fmt1(r.points || 0) + "</td>" +
             ids.map(function (id) { var v = (r.rounds && r.rounds[id]) || 0; return '<td class="n' + (v > 0 && v === top[id] ? " top" : "") + '">' + (v ? fmt1(v) : "0") + "</td>"; }).join("") +
             (sp ? spTd(r.cup, r.cupClub) + spTd(r.dark, r.darkClub) : "") +
             '<td class="n">' + (r.correct || 0) + '</td><td class="n">' + (r.bestGap ? r.bestGap + "<small>" + esc(r.bestGapClub || "") + "</small>" : "-") + "</td></tr>";
@@ -1466,8 +1524,8 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       var R = { id: r.id, name: r.name, mult: r.mult, resolved: r.status === "resolved", ties: [] };
       tieIds(r).forEach(function (tid) {
         var t = r.ties[tid];
-        var T = { tid: tid, home: t.home, away: t.away, ptsHome: t.ptsHome, ptsAway: t.ptsAway, winner: R.resolved ? (t.winner || null) : null, picks: {} };
-        Object.keys(pub.picks).forEach(function (n) { names[n] = 1; var s = (pub.picks[n] || {})[tid]; if (s) T.picks[n] = s; });
+        var T = { tid: tid, home: t.home, away: t.away, ptsHome: t.ptsHome, ptsAway: t.ptsAway, winner: R.resolved ? (t.winner || null) : null, picks: {}, auto: {} };
+        Object.keys(pub.picks).forEach(function (n) { names[n] = 1; var s = (pub.picks[n] || {})[tid]; if (s) T.picks[n] = s; if (((pub.auto || {})[n] || {})[tid]) T.auto[n] = true; });
         R.ties.push(T);
       });
       rounds.push(R);
@@ -1477,7 +1535,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       if (side !== "home" && side !== "away") { picks.push({ n: n, R: R, T: T, none: true }); return; }
       var me = T[side], opp = T[side === "home" ? "away" : "home"], potential = side === "home" ? T.ptsHome : T.ptsAway;
       picks.push({ n: n, R: R, T: T, side: side, club: me, opp: opp, potential: potential, decided: !!T.winner,
-        won: T.winner ? T.winner === side : null, pts: T.winner === side ? potential : 0, dog: me.rank > opp.rank, gap: me.rank - opp.rank });
+        won: T.winner ? T.winner === side : null, pts: T.winner === side ? potential : 0, dog: me.rank > opp.rank, gap: me.rank - opp.rank, auto: !!T.auto[n] });
     }); }); });
     var rows = lb ? (Array.isArray(lb) ? lb : Object.keys(lb).map(function (k) { return lb[k]; })).filter(Boolean) : [], lbBy = {};
     rows.forEach(function (r) { lbBy[r.name] = r; names[r.name] = 1; });
@@ -1568,8 +1626,38 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       });
     });
     facts.push(["Lone wolves", wolves.length ? wolves.join("<br>") : "Nobody went out on their own this round."]);
-    out += stPanel(esc(R.name) + " in brief", "", '<dl class="st-facts">' + facts.map(function (f) { return "<dt>" + f[0] + "</dt><dd>" + f[1] + "</dd>"; }).join("") + "</dl>");
+    out += stPanel(esc(R.name) + " in brief", "", '<dl class="st-facts">' + facts.map(function (f) { return "<dt>" + f[0] + "</dt><dd>" + f[1] + "</dd>"; }).join("") + "</dl>" +
+      (R.resolved ? '<div class="btnrow" style="padding:0 16px 14px;align-items:center"><button type="button" class="btn small secondary" id="stRecapCopy">Copy a round recap</button><span class="spstate" id="stRecapOut" role="status"></span></div>' : ""));
     return out;
+  }
+
+  // A plain-text summary of a finished round, for pasting into a group chat.
+  function stRecap(D, R) {
+    var rp = D.picks.filter(function (p) { return p.R === R && !p.none; }), L = ["Kamikaze FA Cup: " + R.name];
+    var tot = {}; rp.forEach(function (p) { tot[p.n] = (tot[p.n] || 0) + p.pts; });
+    var best = Math.max.apply(null, Object.keys(tot).map(function (n) { return tot[n]; }).concat([0]));
+    var winners = Object.keys(tot).filter(function (n) { return best > 0 && Math.abs(tot[n] - best) < 1e-9; });
+    if (winners.length) L.push("Round winner: " + winners.join(" and ") + " with " + fmt1(best) + " points.");
+    var shock = null;
+    R.ties.forEach(function (T) {
+      if (!T.winner) return;
+      var on = rp.filter(function (p) { return p.T === T; }), got = on.filter(function (p) { return p.won; });
+      if (on.length < 2) return;
+      var share = got.length / on.length;
+      if (share < 0.5 && (!shock || share < shock.share)) shock = { T: T, share: share, got: got, total: on.length };
+    });
+    if (shock) L.push("Shock: " + shock.T[shock.T.winner].short + " knocked out " + shock.T[shock.T.winner === "home" ? "away" : "home"].short + ". " +
+      (shock.got.length ? "Predicted by " + shock.got.map(function (p) { return p.n; }).join(", ") + " (" + shock.got.length + " of " + shock.total + ")." : "Nobody predicted it."));
+    var bp = rp.filter(function (p) { return p.won; }).sort(function (x, y) { return y.pts - x.pts; })[0];
+    if (bp) L.push("Best pick: " + bp.club.short + " to beat " + bp.opp.short + ", " + fmt1(bp.pts) + " points (" + rp.filter(function (p) { return p.won && p.T === bp.T; }).map(function (p) { return p.n; }).join(", ") + ").");
+    // the table as it stood after this round
+    var steps = stStandings(D), step = steps.filter(function (x) { return x.R === R; })[0];
+    if (step) {
+      var order = D.mans.slice().sort(function (a, b) { return step.pos[a] - step.pos[b]; }).slice(0, 5);
+      L.push("Table after " + R.name + ": " + order.map(function (n) { return step.pos[n] + ". " + n + " " + fmt1(step.pts[n]); }).join(", ") + (D.mans.length > 5 ? ", ..." : "") + ".");
+    }
+    L.push("Full table: " + pageLink("table"));
+    return L.join("\n");
   }
 
   /* --- the league so far --- */
@@ -1643,7 +1731,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   function stGiant(D) {
     if (!D.resolved.length) return "";
     var rows = D.mans.map(function (n) {
-      var dogs = stOf(D, n).filter(function (p) { return !p.none && p.decided && p.dog; }), hit = dogs.filter(function (p) { return p.won; });
+      var dogs = stOf(D, n).filter(function (p) { return !p.none && !p.auto && p.decided && p.dog; }), hit = dogs.filter(function (p) { return p.won; });
       var top = hit.slice().sort(function (a, b) { return b.gap - a.gap; })[0];
       return { n: n, hit: hit.length, tried: dogs.length, gap: top ? top.gap : 0, club: top ? top.club.short + " v " + top.opp.short : "" };
     }).sort(function (a, b) { return b.hit - a.hit || b.gap - a.gap || a.n.localeCompare(b.n); });
@@ -1653,23 +1741,24 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
   }
   function stStyleRows(D) {
     return D.mans.map(function (n) {
-      var mine = stOf(D, n).filter(function (p) { return !p.none; }), dec = mine.filter(function (p) { return p.decided; });
+      var all = stOf(D, n).filter(function (p) { return !p.none; }), dec = all.filter(function (p) { return p.decided; });
+      var mine = all.filter(function (p) { return !p.auto; });          // their own predictions, not ones filled in at the lock
       var dogs = mine.filter(function (p) { return p.dog; }), dogDec = dogs.filter(function (p) { return p.decided; }), crowdOn = 0, crowdWith = 0;
       mine.forEach(function (p) {
         var h = 0, a = 0; Object.keys(p.T.picks).forEach(function (m) { if (p.T.picks[m] === "home") h++; else if (p.T.picks[m] === "away") a++; });
         if (h === a) return; crowdOn++; if ((h > a ? "home" : "away") === p.side) crowdWith++;
       });
-      return { n: n, picks: mine.length, dec: dec.length, right: dec.filter(function (p) { return p.won; }).length, dogs: dogs.length, dogDec: dogDec.length,
+      return { n: n, picks: mine.length, autos: all.length - mine.length, dec: dec.length, right: dec.filter(function (p) { return p.won; }).length, dogs: dogs.length, dogDec: dogDec.length,
         dogRight: dogDec.filter(function (p) { return p.won; }).length, crowdOn: crowdOn, crowdWith: crowdWith,
         unlucky: dec.filter(function (p) { return !p.won && p.club.p >= 0.7; }).length };
     });
   }
   function stStyle(D) {
     var rows = stStyleRows(D).sort(function (a, b) { return (b.dec ? b.right / b.dec : -1) - (a.dec ? a.right / a.dec : -1) || a.n.localeCompare(b.n); });
-    return stPanel("Accuracy and style", "", stTable(["Manager", "Correct", "Backs the underdog", "Underdogs that won", "With the crowd"], rows.map(function (r) {
+    return stPanel("Accuracy and style", "", stTable(["Manager", "Correct", "Backs the underdog", "Underdogs that won", "With the crowd", "Left to auto"], rows.map(function (r) {
       return "<tr" + stMe(r.n) + "><td>" + stName(r.n) + '</td><td class="n total">' + pct(r.right, r.dec) + "<small>" + r.right + " of " + r.dec + '</small></td><td class="n">' + pct(r.dogs, r.picks) + "<small>" + r.dogs + " of " + r.picks +
-        '</small></td><td class="n">' + pct(r.dogRight, r.dogDec) + "<small>" + r.dogRight + " of " + r.dogDec + '</small></td><td class="n">' + pct(r.crowdWith, r.crowdOn) + "<small>" + r.crowdWith + " of " + r.crowdOn + "</small></td></tr>"; })) +
-      stNote("“With the crowd” is how often a manager picked the same side as most of the league. A low figure marks a maverick, a high one a sheep."));
+        '</small></td><td class="n">' + pct(r.dogRight, r.dogDec) + "<small>" + r.dogRight + " of " + r.dogDec + '</small></td><td class="n">' + pct(r.crowdWith, r.crowdOn) + "<small>" + r.crowdWith + " of " + r.crowdOn + '</small></td><td class="n">' + r.autos + "</td></tr>"; })) +
+      stNote("“Left to auto” counts ties a manager didn’t predict, which were filled in when the round locked. Those don’t count towards the underdog and crowd figures. ") + stNote("“With the crowd” is how often a manager picked the same side as most of the league. A low figure marks a maverick, a high one a sheep."));
   }
   function stH2H(D) {
     if (D.mans.length < 2) return "";
@@ -1765,7 +1854,7 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
       (beating.length ? beating.length + " of " + D.mans.length + " managers are beating Q: " + beating.sort(function (a, b) { return tiePts[b] - tiePts[a]; }).map(stName).join(", ") + "." : "Nobody is beating Q yet.") + " Season picks aren't counted here."));
     var st = stStyleRows(D), awards = [];
     function best(list, f, min) { var top = null; list.forEach(function (r) { var v = f(r); if (v === null || v === undefined || isNaN(v)) return; if (!top || v > top.v) top = { v: v, n: [r.n] }; else if (v === top.v) top.n.push(r.n); }); return top && top.v > (min || 0) ? top : null; }
-    var gk = null; D.picks.forEach(function (p) { if (p.won && p.dog && (!gk || p.gap > gk.gap)) gk = p; });
+    var gk = null; D.picks.forEach(function (p) { if (p.won && p.dog && !p.auto && (!gk || p.gap > gk.gap)) gk = p; });
     if (gk) awards.push(["Giant-killer", D.picks.filter(function (p) { return p.won && p.T === gk.T && p.side === gk.side; }).map(function (p) { return stName(p.n); }).join(", "), esc(gk.club.short) + " over " + esc(gk.opp.short) + ", " + gk.gap + (gk.gap === 1 ? " place" : " places") + " apart"]);
     var a;
     if ((a = best(st.filter(function (r) { return r.dec >= 3; }), function (r) { return r.right / r.dec; }))) awards.push(["Sharpest", a.n.map(stName).join(", "), Math.round(a.v * 100) + "% of predictions correct"]);
@@ -1799,6 +1888,13 @@ nav.tabs button.on{color:var(--ink);border-bottom-color:var(--go)}
     });
   }
   $("statsView").addEventListener("click", function (e) {
+    if (e.target.id === "stRecapCopy" && ST.data) {
+      var R = ST.data.rounds.filter(function (r) { return r.id === ST.round; })[0], out = $("stRecapOut"); if (!R) return;
+      var text = stRecap(ST.data, R);
+      var manual = function () { out.innerHTML = '<textarea readonly style="width:min(100%,420px);min-height:120px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:13px" onfocus="this.select()">' + esc(text) + "</textarea>"; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { out.textContent = "Recap copied. Paste it into your group chat."; }, manual); else manual();
+      return;
+    }
     var b = e.target.closest("[data-stround]"); if (!b) return;
     ST.round = b.getAttribute("data-stround"); var y = window.scrollY; drawStats(); window.scrollTo(0, y);
   });
